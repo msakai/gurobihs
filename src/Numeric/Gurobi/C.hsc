@@ -1,8 +1,28 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MagicHash #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Numeric.Gurobi.C where
 
 #include <gurobi_c.h>
+
+#define hsc_const_cstr(x...)                                      \
+    {                                                             \
+        const char *s = (x);                                      \
+        hsc_printf ("(Ptr \"");                                   \
+        while (*s != '\0')                                        \
+        {                                                         \
+            if (*s == '"' || *s == '\\')                          \
+                hsc_printf ("\\%c", *s);                          \
+            else if (*s >= 0x20 && *s <= 0x7E)                    \
+                hsc_printf ("%c", *s);                            \
+            else                                                  \
+                hsc_printf ("\\%d%s",                             \
+                        (unsigned char) *s,                       \
+                        s[1] >= '0' && s[1] <= '9' ? "\\&" : ""); \
+            ++s;                                                  \
+        }                                                         \
+        hsc_printf ("\"#)");                                      \
+    }
 
 import Foreign.C
 import Foreign
@@ -22,7 +42,7 @@ type Env = Ptr Env_
 ##if !defined(mingw32_HOST_OS)
 ##define stdcall ccall
 ##endif
- 
+
 -- /* Version numbers */
 
 version_major, version_minor, version_technical :: Int
@@ -50,85 +70,133 @@ default_cs_hangup = #const DEFAULT_CS_HANGUP
 
 type ErrorCode = CInt
 
-c_MIN_ERROR                    = #const GRB_C_MIN_ERROR                   
-eRROR_OUT_OF_MEMORY            = #const GRB_ERROR_OUT_OF_MEMORY           
-eRROR_NULL_ARGUMENT            = #const GRB_ERROR_NULL_ARGUMENT           
-eRROR_INVALID_ARGUMENT         = #const GRB_ERROR_INVALID_ARGUMENT        
-eRROR_UNKNOWN_ATTRIBUTE        = #const GRB_ERROR_UNKNOWN_ATTRIBUTE       
-eRROR_DATA_NOT_AVAILABLE       = #const GRB_ERROR_DATA_NOT_AVAILABLE      
-eRROR_INDEX_OUT_OF_RANGE       = #const GRB_ERROR_INDEX_OUT_OF_RANGE      
-eRROR_UNKNOWN_PARAMETER        = #const GRB_ERROR_UNKNOWN_PARAMETER       
-eRROR_VALUE_OUT_OF_RANGE       = #const GRB_ERROR_VALUE_OUT_OF_RANGE      
-eRROR_NO_LICENSE               = #const GRB_ERROR_NO_LICENSE              
-eRROR_SIZE_LIMIT_EXCEEDED      = #const GRB_ERROR_SIZE_LIMIT_EXCEEDED     
-eRROR_CALLBACK                 = #const GRB_ERROR_CALLBACK                
-eRROR_FILE_READ                = #const GRB_ERROR_FILE_READ               
-eRROR_FILE_WRITE               = #const GRB_ERROR_FILE_WRITE              
-eRROR_NUMERIC                  = #const GRB_ERROR_NUMERIC                 
-eRROR_IIS_NOT_INFEASIBLE       = #const GRB_ERROR_IIS_NOT_INFEASIBLE      
-eRROR_NOT_FOR_MIP              = #const GRB_ERROR_NOT_FOR_MIP             
+c_MIN_ERROR
+  , eRROR_OUT_OF_MEMORY
+  , eRROR_NULL_ARGUMENT
+  , eRROR_INVALID_ARGUMENT
+  , eRROR_UNKNOWN_ATTRIBUTE
+  , eRROR_DATA_NOT_AVAILABLE
+  , eRROR_INDEX_OUT_OF_RANGE
+  , eRROR_UNKNOWN_PARAMETER
+  , eRROR_VALUE_OUT_OF_RANGE
+  , eRROR_NO_LICENSE
+  , eRROR_SIZE_LIMIT_EXCEEDED
+  , eRROR_CALLBACK
+  , eRROR_FILE_READ
+  , eRROR_FILE_WRITE
+  , eRROR_NUMERIC
+  , eRROR_IIS_NOT_INFEASIBLE
+  , eRROR_NOT_FOR_MIP
+  , eRROR_OPTIMIZATION_IN_PROGRESS
+  , eRROR_DUPLICATES
+  , eRROR_NODEFILE
+  , eRROR_Q_NOT_PSD
+  , eRROR_QCP_EQUALITY_CONSTRAINT
+  , eRROR_NETWORK
+  , eRROR_JOB_REJECTED
+  , eRROR_NOT_SUPPORTED
+  , eRROR_EXCEED_2B_NONZEROS
+  , eRROR_INVALID_PIECEWISE_OBJ
+  , eRROR_UPDATEMODE_CHANGE
+  , eRROR_CLOUD
+  , eRROR_MODEL_MODIFICATION
+  , eRROR_CSWORKER
+  , eRROR_TUNE_MODEL_TYPES
+  , eRROR_SECURITY
+  , c_MAX_ERROR
+  :: ErrorCode
+
+c_MIN_ERROR                    = #const GRB_C_MIN_ERROR
+eRROR_OUT_OF_MEMORY            = #const GRB_ERROR_OUT_OF_MEMORY
+eRROR_NULL_ARGUMENT            = #const GRB_ERROR_NULL_ARGUMENT
+eRROR_INVALID_ARGUMENT         = #const GRB_ERROR_INVALID_ARGUMENT
+eRROR_UNKNOWN_ATTRIBUTE        = #const GRB_ERROR_UNKNOWN_ATTRIBUTE
+eRROR_DATA_NOT_AVAILABLE       = #const GRB_ERROR_DATA_NOT_AVAILABLE
+eRROR_INDEX_OUT_OF_RANGE       = #const GRB_ERROR_INDEX_OUT_OF_RANGE
+eRROR_UNKNOWN_PARAMETER        = #const GRB_ERROR_UNKNOWN_PARAMETER
+eRROR_VALUE_OUT_OF_RANGE       = #const GRB_ERROR_VALUE_OUT_OF_RANGE
+eRROR_NO_LICENSE               = #const GRB_ERROR_NO_LICENSE
+eRROR_SIZE_LIMIT_EXCEEDED      = #const GRB_ERROR_SIZE_LIMIT_EXCEEDED
+eRROR_CALLBACK                 = #const GRB_ERROR_CALLBACK
+eRROR_FILE_READ                = #const GRB_ERROR_FILE_READ
+eRROR_FILE_WRITE               = #const GRB_ERROR_FILE_WRITE
+eRROR_NUMERIC                  = #const GRB_ERROR_NUMERIC
+eRROR_IIS_NOT_INFEASIBLE       = #const GRB_ERROR_IIS_NOT_INFEASIBLE
+eRROR_NOT_FOR_MIP              = #const GRB_ERROR_NOT_FOR_MIP
 eRROR_OPTIMIZATION_IN_PROGRESS = #const GRB_ERROR_OPTIMIZATION_IN_PROGRESS
-eRROR_DUPLICATES               = #const GRB_ERROR_DUPLICATES              
-eRROR_NODEFILE                 = #const GRB_ERROR_NODEFILE                
-eRROR_Q_NOT_PSD                = #const GRB_ERROR_Q_NOT_PSD               
-eRROR_QCP_EQUALITY_CONSTRAINT  = #const GRB_ERROR_QCP_EQUALITY_CONSTRAINT 
-eRROR_NETWORK                  = #const GRB_ERROR_NETWORK                 
-eRROR_JOB_REJECTED             = #const GRB_ERROR_JOB_REJECTED            
-eRROR_NOT_SUPPORTED            = #const GRB_ERROR_NOT_SUPPORTED           
-eRROR_EXCEED_2B_NONZEROS       = #const GRB_ERROR_EXCEED_2B_NONZEROS      
-eRROR_INVALID_PIECEWISE_OBJ    = #const GRB_ERROR_INVALID_PIECEWISE_OBJ   
-eRROR_UPDATEMODE_CHANGE        = #const GRB_ERROR_UPDATEMODE_CHANGE       
-eRROR_CLOUD                    = #const GRB_ERROR_CLOUD                   
-eRROR_MODEL_MODIFICATION       = #const GRB_ERROR_MODEL_MODIFICATION      
-eRROR_CSWORKER                 = #const GRB_ERROR_CSWORKER                
-eRROR_TUNE_MODEL_TYPES         = #const GRB_ERROR_TUNE_MODEL_TYPES        
-eRROR_SECURITY                 = #const GRB_ERROR_SECURITY                
-c_MAX_ERROR                    = #const GRB_C_MAX_ERROR                   
+eRROR_DUPLICATES               = #const GRB_ERROR_DUPLICATES
+eRROR_NODEFILE                 = #const GRB_ERROR_NODEFILE
+eRROR_Q_NOT_PSD                = #const GRB_ERROR_Q_NOT_PSD
+eRROR_QCP_EQUALITY_CONSTRAINT  = #const GRB_ERROR_QCP_EQUALITY_CONSTRAINT
+eRROR_NETWORK                  = #const GRB_ERROR_NETWORK
+eRROR_JOB_REJECTED             = #const GRB_ERROR_JOB_REJECTED
+eRROR_NOT_SUPPORTED            = #const GRB_ERROR_NOT_SUPPORTED
+eRROR_EXCEED_2B_NONZEROS       = #const GRB_ERROR_EXCEED_2B_NONZEROS
+eRROR_INVALID_PIECEWISE_OBJ    = #const GRB_ERROR_INVALID_PIECEWISE_OBJ
+eRROR_UPDATEMODE_CHANGE        = #const GRB_ERROR_UPDATEMODE_CHANGE
+eRROR_CLOUD                    = #const GRB_ERROR_CLOUD
+eRROR_MODEL_MODIFICATION       = #const GRB_ERROR_MODEL_MODIFICATION
+eRROR_CSWORKER                 = #const GRB_ERROR_CSWORKER
+eRROR_TUNE_MODEL_TYPES         = #const GRB_ERROR_TUNE_MODEL_TYPES
+eRROR_SECURITY                 = #const GRB_ERROR_SECURITY
+c_MAX_ERROR                    = #const GRB_C_MAX_ERROR
 
 -- /* Constraint senses */
 
--- #define GRB_LESS_EQUAL    '<'
-lESS_EQUAL :: CChar
-lESS_EQUAL = #const GRB_LESS_EQUAL
-
--- #define GRB_GREATER_EQUAL '>'
-gREATER_EUQAL :: CChar
+lESS_EQUAL, gREATER_EUQAL, eQUAL :: CChar
+lESS_EQUAL    = #const GRB_LESS_EQUAL
 gREATER_EUQAL = #const GRB_GREATER_EQUAL
-
--- #define GRB_EQUAL         '='
-eQUAL :: CChar
-eQUAL = #const GRB_EQUAL
+eQUAL         = #const GRB_EQUAL
 
 -- /* Variable types */
--- 
--- #define GRB_CONTINUOUS 'C'
--- #define GRB_BINARY     'B'
--- #define GRB_INTEGER    'I'
--- #define GRB_SEMICONT   'S'
--- #define GRB_SEMIINT    'N'
+
+cONTINUOUS, bInary, iNTEGER, sEMICONT, sEMIINT :: CChar
+cONTINUOUS = #const GRB_CONTINUOUS
+bInary     = #const GRB_BINARY
+iNTEGER    = #const GRB_INTEGER
+sEMICONT   = #const GRB_SEMICONT
+sEMIINT    = #const GRB_SEMIINT
 
 -- /* Objective sense */
--- 
--- #define GRB_MINIMIZE 1
--- #define GRB_MAXIMIZE -1
+
+mINIMIZE :: CInt
+mINIMIZE = #const GRB_MINIMIZE
+
+mAXIMIZE :: CInt
+mAXIMIZE = #const GRB_MAXIMIZE
 
 -- /* SOS types */
--- 
--- #define GRB_SOS_TYPE1 1
--- #define GRB_SOS_TYPE2 2
+
+sOS_TYPE1 :: CInt
+sOS_TYPE1 = #const GRB_SOS_TYPE1
+
+sOS_TYPE2 :: CInt
+sOS_TYPE2 = #const GRB_SOS_TYPE2
 
 -- /* Numeric constants */
--- 
--- #define GRB_INFINITY  1e100
--- #define GRB_UNDEFINED 1e101
--- #define GRB_MAXINT    2000000000
+
+iNFINITY :: CInt
+iNFINITY = #const GRB_INFINITY
+
+uNDEFINED :: CInt
+uNDEFINED = #const GRB_UNDEFINED
+
+mAXINT :: CInt
+mAXINT = #const GRB_MAXINT
 
 -- /* Limits */
--- 
--- #define GRB_MAX_NAMELEN    255
--- #define GRB_MAX_STRLEN     512
--- #define GRB_MAX_TAGLEN    10240
--- #define GRB_MAX_CONCURRENT 64
+
+mAX_NAMELEN :: CInt
+mAX_NAMELEN = #const GRB_MAX_NAMELEN
+
+mAX_STRLEN :: CInt
+mAX_STRLEN = #const GRB_MAX_STRLEN
+
+mAX_TAGLEN :: CInt
+mAX_TAGLEN = #const GRB_MAX_TAGLEN
+
+mAX_CONCURRENT :: CInt
+mAX_CONCURRENT = #const GRB_MAX_CONCURRENT
 
 -- /* Callback */
 
@@ -227,7 +295,7 @@ foreign import stdcall unsafe "GRBgetintattrlist" getintattrlist
   -> CInt -- ^ len
   -> Ptr CInt -- ^ ind
   -> Ptr CInt -- ^ values
-  -> IO ErrorCode 
+  -> IO ErrorCode
 
 -- int __stdcall
 --   GRBsetintattrlist(GRBmodel *model, const char *attrname,
@@ -614,424 +682,1662 @@ foreign import stdcall unsafe "GRBcblazy" cblazy
 -- */
 
 -- /* Model attributes */
--- 
--- #define GRB_INT_ATTR_NUMCONSTRS    "NumConstrs"    /* # of constraints */
--- #define GRB_INT_ATTR_NUMVARS       "NumVars"       /* # of vars */
--- #define GRB_INT_ATTR_NUMSOS        "NumSOS"        /* # of sos constraints */
--- #define GRB_INT_ATTR_NUMQCONSTRS   "NumQConstrs"   /* # of quadratic constraints */
--- #define GRB_INT_ATTR_NUMGENCONSTRS "NumGenConstrs" /* # of general constraints */
--- #define GRB_INT_ATTR_NUMNZS        "NumNZs"        /* # of nz in A */
--- #define GRB_DBL_ATTR_DNUMNZS       "DNumNZs"       /* # of nz in A */
--- #define GRB_INT_ATTR_NUMQNZS       "NumQNZs"       /* # of nz in Q */
--- #define GRB_INT_ATTR_NUMQCNZS      "NumQCNZs"      /* # of nz in q constraints */
--- #define GRB_INT_ATTR_NUMINTVARS    "NumIntVars"    /* # of integer vars */
--- #define GRB_INT_ATTR_NUMBINVARS    "NumBinVars"    /* # of binary vars */
--- #define GRB_INT_ATTR_NUMPWLOBJVARS "NumPWLObjVars" /* # of variables with PWL obj. */
--- #define GRB_STR_ATTR_MODELNAME     "ModelName"     /* model name */
--- #define GRB_INT_ATTR_MODELSENSE    "ModelSense"    /* 1=min, -1=max */
--- #define GRB_DBL_ATTR_OBJCON        "ObjCon"        /* Objective constant */
--- #define GRB_INT_ATTR_IS_MIP        "IsMIP"         /* Is model a MIP? */
--- #define GRB_INT_ATTR_IS_QP         "IsQP"          /* Is model a QP/MIQP (without Q/NL constraints)? */
--- #define GRB_INT_ATTR_IS_QCP        "IsQCP"         /* Model has quadratic constr? */
--- #define GRB_INT_ATTR_IS_MULTIOBJ   "IsMultiObj"    /* Model has multiple objectives? */
--- #define GRB_INT_ATTR_LICENSE_EXPIRATION "LicenseExpiration" /* License expiration date */
--- #define GRB_INT_ATTR_NUMTAGGED     "NumTagged"     /* number of tagged elements in model */
--- #define GRB_INT_ATTR_FINGERPRINT   "Fingerprint"   /* fingerprint computed from the model data and attributes influencing the optimization process */
--- 
+
+-- | # of constraints
+iNT_ATTR_NUMCONSTRS :: String
+iNT_ATTR_NUMCONSTRS = #const_str GRB_INT_ATTR_NUMCONSTRS
+
+-- | # of constraints
+iNT_ATTR_NUMCONSTRS_PTR :: CString
+iNT_ATTR_NUMCONSTRS_PTR = #const_cstr GRB_INT_ATTR_NUMCONSTRS
+
+-- | # of vars
+iNT_ATTR_NUMVARS :: String
+iNT_ATTR_NUMVARS = #const_str GRB_INT_ATTR_NUMVARS
+
+-- | # of vars
+iNT_ATTR_NUMVARS_PTR :: CString
+iNT_ATTR_NUMVARS_PTR = #const_cstr GRB_INT_ATTR_NUMVARS
+
+-- | # of sos constraints
+iNT_ATTR_NUMSOS :: String
+iNT_ATTR_NUMSOS = #const_str GRB_INT_ATTR_NUMSOS
+
+-- | # of sos constraints
+iNT_ATTR_NUMSOS_PTR :: CString
+iNT_ATTR_NUMSOS_PTR = #const_cstr GRB_INT_ATTR_NUMSOS
+
+-- | # of quadratic constraints
+iNT_ATTR_NUMQCONSTRS :: String
+iNT_ATTR_NUMQCONSTRS = #const_str GRB_INT_ATTR_NUMQCONSTRS
+
+-- | # of quadratic constraints
+iNT_ATTR_NUMQCONSTRS_PTR :: CString
+iNT_ATTR_NUMQCONSTRS_PTR = #const_cstr GRB_INT_ATTR_NUMQCONSTRS
+
+-- | # of nz in A
+iNT_ATTR_NUMNZS :: String
+iNT_ATTR_NUMNZS = #const_str GRB_INT_ATTR_NUMNZS
+
+-- | # of nz in A
+iNT_ATTR_NUMNZS_PTR :: CString
+iNT_ATTR_NUMNZS_PTR = #const_cstr GRB_INT_ATTR_NUMNZS
+
+-- | # of nz in A
+dBL_ATTR_DNUMNZS :: String
+dBL_ATTR_DNUMNZS = #const_str GRB_DBL_ATTR_DNUMNZS
+
+-- | # of nz in A
+dBL_ATTR_DNUMNZS_PTR :: CString
+dBL_ATTR_DNUMNZS_PTR = #const_cstr GRB_DBL_ATTR_DNUMNZS
+
+-- | # of nz in Q
+iNT_ATTR_NUMQNZS :: String
+iNT_ATTR_NUMQNZS = #const_str GRB_INT_ATTR_NUMQNZS
+
+-- | # of nz in Q
+iNT_ATTR_NUMQNZS_PTR :: CString
+iNT_ATTR_NUMQNZS_PTR = #const_cstr GRB_INT_ATTR_NUMQNZS
+
+-- | # of nz in q constraints
+iNT_ATTR_NUMQCNZS :: String
+iNT_ATTR_NUMQCNZS = #const_str GRB_INT_ATTR_NUMQCNZS
+
+-- | # of nz in q constraints
+iNT_ATTR_NUMQCNZS_PTR :: CString
+iNT_ATTR_NUMQCNZS_PTR = #const_cstr GRB_INT_ATTR_NUMQCNZS
+
+-- | # of integer vars
+iNT_ATTR_NUMINTVARS :: String
+iNT_ATTR_NUMINTVARS = #const_str GRB_INT_ATTR_NUMINTVARS
+
+-- | # of integer vars
+iNT_ATTR_NUMINTVARS_PTR :: CString
+iNT_ATTR_NUMINTVARS_PTR = #const_cstr GRB_INT_ATTR_NUMINTVARS
+
+-- | # of binary vars
+iNT_ATTR_NUMBINVARS :: String
+iNT_ATTR_NUMBINVARS = #const_str GRB_INT_ATTR_NUMBINVARS
+
+-- | # of binary vars
+iNT_ATTR_NUMBINVARS_PTR :: CString
+iNT_ATTR_NUMBINVARS_PTR = #const_cstr GRB_INT_ATTR_NUMBINVARS
+
+-- | model name
+sTR_ATTR_MODELNAME :: String
+sTR_ATTR_MODELNAME = #const_str GRB_STR_ATTR_MODELNAME
+
+-- | model name
+sTR_ATTR_MODELNAME_PTR :: CString
+sTR_ATTR_MODELNAME_PTR = #const_cstr GRB_STR_ATTR_MODELNAME
+
+-- | 1=min, -1=max
+iNT_ATTR_MODELSENSE :: String
+iNT_ATTR_MODELSENSE = #const_str GRB_INT_ATTR_MODELSENSE
+
+-- | 1=min, -1=max
+iNT_ATTR_MODELSENSE_PTR :: CString
+iNT_ATTR_MODELSENSE_PTR = #const_cstr GRB_INT_ATTR_MODELSENSE
+
+-- | Objective constant
+dBL_ATTR_OBJCON :: String
+dBL_ATTR_OBJCON = #const_str GRB_DBL_ATTR_OBJCON
+
+-- | Objective constant
+dBL_ATTR_OBJCON_PTR :: CString
+dBL_ATTR_OBJCON_PTR = #const_cstr GRB_DBL_ATTR_OBJCON
+
+-- | Is model a MIP?
+iNT_ATTR_IS_MIP :: String
+iNT_ATTR_IS_MIP = #const_str GRB_INT_ATTR_IS_MIP
+
+-- | Is model a MIP?
+iNT_ATTR_IS_MIP_PTR :: CString
+iNT_ATTR_IS_MIP_PTR = #const_cstr GRB_INT_ATTR_IS_MIP
+
+-- | Is model a QP/MIQP (without Q/NL constraints)?
+iNT_ATTR_IS_QP :: String
+iNT_ATTR_IS_QP = #const_str GRB_INT_ATTR_IS_QP
+
+-- | Is model a QP/MIQP (without Q/NL constraints)?
+iNT_ATTR_IS_QP_PTR :: CString
+iNT_ATTR_IS_QP_PTR = #const_cstr GRB_INT_ATTR_IS_QP
+
+-- | Model has quadratic constr?
+iNT_ATTR_IS_QCP :: String
+iNT_ATTR_IS_QCP = #const_str GRB_INT_ATTR_IS_QCP
+
+-- | Model has quadratic constr?
+iNT_ATTR_IS_QCP_PTR :: CString
+iNT_ATTR_IS_QCP_PTR = #const_cstr GRB_INT_ATTR_IS_QCP
+
+-- | Model has multiple objectives?
+iNT_ATTR_IS_MULTIOBJ :: String
+iNT_ATTR_IS_MULTIOBJ = #const_str GRB_INT_ATTR_IS_MULTIOBJ
+
+-- | Model has multiple objectives?
+iNT_ATTR_IS_MULTIOBJ_PTR :: CString
+iNT_ATTR_IS_MULTIOBJ_PTR = #const_cstr GRB_INT_ATTR_IS_MULTIOBJ
+
+-- | number of tagged elements in model
+iNT_ATTR_NUMTAGGED :: String
+iNT_ATTR_NUMTAGGED = #const_str GRB_INT_ATTR_NUMTAGGED
+
+-- | number of tagged elements in model
+iNT_ATTR_NUMTAGGED_PTR :: CString
+iNT_ATTR_NUMTAGGED_PTR = #const_cstr GRB_INT_ATTR_NUMTAGGED
+
+-- | fingerprint computed from the model data and attributes influencing the optimization process
+iNT_ATTR_FINGERPRINT :: String
+iNT_ATTR_FINGERPRINT = #const_str GRB_INT_ATTR_FINGERPRINT
+
+-- | fingerprint computed from the model data and attributes influencing the optimization process
+iNT_ATTR_FINGERPRINT_PTR :: CString
+iNT_ATTR_FINGERPRINT_PTR = #const_cstr GRB_INT_ATTR_FINGERPRINT
+
 -- /* Batch attributes */
--- #define GRB_INT_ATTR_BATCHERRORCODE    "BatchErrorCode"
--- #define GRB_STR_ATTR_BATCHERRORMESSAGE "BatchErrorMessage"
--- #define GRB_STR_ATTR_BATCHID           "BatchID"
--- #define GRB_INT_ATTR_BATCHSTATUS       "BatchStatus"
--- 
+
+iNT_ATTR_BATCHERRORCODE :: String
+iNT_ATTR_BATCHERRORCODE = #const_str GRB_INT_ATTR_BATCHERRORCODE
+
+iNT_ATTR_BATCHERRORCODE_PTR :: CString
+iNT_ATTR_BATCHERRORCODE_PTR = #const_cstr GRB_INT_ATTR_BATCHERRORCODE
+
+sTR_ATTR_BATCHID :: String
+sTR_ATTR_BATCHID = #const_str GRB_STR_ATTR_BATCHID
+
+sTR_ATTR_BATCHID_PTR :: CString
+sTR_ATTR_BATCHID_PTR = #const_cstr GRB_STR_ATTR_BATCHID
+
+iNT_ATTR_BATCHSTATUS :: String
+iNT_ATTR_BATCHSTATUS = #const_str GRB_INT_ATTR_BATCHSTATUS
+
+iNT_ATTR_BATCHSTATUS_PTR :: CString
+iNT_ATTR_BATCHSTATUS_PTR = #const_cstr GRB_INT_ATTR_BATCHSTATUS
+
 -- /* Variable attributes */
--- 
--- #define GRB_DBL_ATTR_LB             "LB"              /* Lower bound */
--- #define GRB_DBL_ATTR_UB             "UB"              /* Upper bound */
--- #define GRB_DBL_ATTR_OBJ            "Obj"             /* Objective coeff */
--- #define GRB_CHAR_ATTR_VTYPE         "VType"           /* Integrality type */
--- #define GRB_DBL_ATTR_START          "Start"           /* MIP start value, depends on startnumber */
--- #define GRB_DBL_ATTR_PSTART         "PStart"          /* LP primal solution warm start */
--- #define GRB_INT_ATTR_BRANCHPRIORITY "BranchPriority"  /* MIP branch priority */
--- #define GRB_STR_ATTR_VARNAME        "VarName"         /* Variable name */
--- #define GRB_INT_ATTR_PWLOBJCVX      "PWLObjCvx"       /* Convexity of variable PWL obj */
--- #define GRB_DBL_ATTR_VARHINTVAL     "VarHintVal"      /* variable hint value */
--- #define GRB_INT_ATTR_VARHINTPRI     "VarHintPri"      /* variable hint priority */
--- #define GRB_INT_ATTR_PARTITION      "Partition"       /* user specified variable partition */
--- #define GRB_INT_ATTR_POOLIGNORE     "PoolIgnore"      /* Ignore variable for solution identity check in solution pool */
--- #define GRB_STR_ATTR_VTAG           "VTag"            /* variable tags */
--- 
+
+-- | Lower bound
+dBL_ATTR_LB :: String
+dBL_ATTR_LB = #const_str GRB_DBL_ATTR_LB
+
+-- | Lower bound
+dBL_ATTR_LB_PTR :: CString
+dBL_ATTR_LB_PTR = #const_cstr GRB_DBL_ATTR_LB
+
+-- | Upper bound
+dBL_ATTR_UB :: String
+dBL_ATTR_UB = #const_str GRB_DBL_ATTR_UB
+
+-- | Upper bound
+dBL_ATTR_UB_PTR :: CString
+dBL_ATTR_UB_PTR = #const_cstr GRB_DBL_ATTR_UB
+
+-- | Objective coeff
+dBL_ATTR_OBJ :: String
+dBL_ATTR_OBJ = #const_str GRB_DBL_ATTR_OBJ
+
+-- | Objective coeff
+dBL_ATTR_OBJ_PTR :: CString
+dBL_ATTR_OBJ_PTR = #const_cstr GRB_DBL_ATTR_OBJ
+
+-- | Integrality type
+cHAR_ATTR_VTYPE :: String
+cHAR_ATTR_VTYPE = #const_str GRB_CHAR_ATTR_VTYPE
+
+-- | Integrality type
+cHAR_ATTR_VTYPE_PTR :: CString
+cHAR_ATTR_VTYPE_PTR = #const_cstr GRB_CHAR_ATTR_VTYPE
+
+-- | MIP start value, depends on startnumber
+dBL_ATTR_START :: String
+dBL_ATTR_START = #const_str GRB_DBL_ATTR_START
+
+-- | MIP start value, depends on startnumber
+dBL_ATTR_START_PTR :: CString
+dBL_ATTR_START_PTR = #const_cstr GRB_DBL_ATTR_START
+
+-- | LP primal solution warm start
+dBL_ATTR_PSTART :: String
+dBL_ATTR_PSTART = #const_str GRB_DBL_ATTR_PSTART
+
+-- | LP primal solution warm start
+dBL_ATTR_PSTART_PTR :: CString
+dBL_ATTR_PSTART_PTR = #const_cstr GRB_DBL_ATTR_PSTART
+
+-- | Variable name
+sTR_ATTR_VARNAME :: String
+sTR_ATTR_VARNAME = #const_str GRB_STR_ATTR_VARNAME
+
+-- | Variable name
+sTR_ATTR_VARNAME_PTR :: CString
+sTR_ATTR_VARNAME_PTR = #const_cstr GRB_STR_ATTR_VARNAME
+
+-- | Convexity of variable PWL obj
+iNT_ATTR_PWLOBJCVX :: String
+iNT_ATTR_PWLOBJCVX = #const_str GRB_INT_ATTR_PWLOBJCVX
+
+-- | Convexity of variable PWL obj
+iNT_ATTR_PWLOBJCVX_PTR :: CString
+iNT_ATTR_PWLOBJCVX_PTR = #const_cstr GRB_INT_ATTR_PWLOBJCVX
+
+-- | variable hint value
+dBL_ATTR_VARHINTVAL :: String
+dBL_ATTR_VARHINTVAL = #const_str GRB_DBL_ATTR_VARHINTVAL
+
+-- | variable hint value
+dBL_ATTR_VARHINTVAL_PTR :: CString
+dBL_ATTR_VARHINTVAL_PTR = #const_cstr GRB_DBL_ATTR_VARHINTVAL
+
+-- | variable hint priority
+iNT_ATTR_VARHINTPRI :: String
+iNT_ATTR_VARHINTPRI = #const_str GRB_INT_ATTR_VARHINTPRI
+
+-- | variable hint priority
+iNT_ATTR_VARHINTPRI_PTR :: CString
+iNT_ATTR_VARHINTPRI_PTR = #const_cstr GRB_INT_ATTR_VARHINTPRI
+
+-- | user specified variable partition
+iNT_ATTR_PARTITION :: String
+iNT_ATTR_PARTITION = #const_str GRB_INT_ATTR_PARTITION
+
+-- | user specified variable partition
+iNT_ATTR_PARTITION_PTR :: CString
+iNT_ATTR_PARTITION_PTR = #const_cstr GRB_INT_ATTR_PARTITION
+
+-- | Ignore variable for solution identity check in solution pool
+iNT_ATTR_POOLIGNORE :: String
+iNT_ATTR_POOLIGNORE = #const_str GRB_INT_ATTR_POOLIGNORE
+
+-- | Ignore variable for solution identity check in solution pool
+iNT_ATTR_POOLIGNORE_PTR :: CString
+iNT_ATTR_POOLIGNORE_PTR = #const_cstr GRB_INT_ATTR_POOLIGNORE
+
+-- | variable tags
+sTR_ATTR_VTAG :: String
+sTR_ATTR_VTAG = #const_str GRB_STR_ATTR_VTAG
+
+-- | variable tags
+sTR_ATTR_VTAG_PTR :: CString
+sTR_ATTR_VTAG_PTR = #const_cstr GRB_STR_ATTR_VTAG
+
 -- /* Constraint attributes */
--- 
--- #define GRB_STR_ATTR_CTAG       "CTag"       /* linear constraint tags */
--- #define GRB_DBL_ATTR_RHS        "RHS"        /* RHS */
--- #define GRB_DBL_ATTR_DSTART     "DStart"     /* LP dual solution warm start */
--- #define GRB_CHAR_ATTR_SENSE     "Sense"      /* Sense ('<', '>', or '=') */
--- #define GRB_STR_ATTR_CONSTRNAME "ConstrName" /* Constraint name */
--- #define GRB_INT_ATTR_LAZY       "Lazy"       /* Lazy constraint? */
--- 
+
+-- | linear constraint tags
+sTR_ATTR_CTAG :: String
+sTR_ATTR_CTAG = #const_str GRB_STR_ATTR_CTAG
+
+-- | linear constraint tags
+sTR_ATTR_CTAG_PTR :: CString
+sTR_ATTR_CTAG_PTR = #const_cstr GRB_STR_ATTR_CTAG
+
+-- | RHS
+dBL_ATTR_RHS :: String
+dBL_ATTR_RHS = #const_str GRB_DBL_ATTR_RHS
+
+-- | RHS
+dBL_ATTR_RHS_PTR :: CString
+dBL_ATTR_RHS_PTR = #const_cstr GRB_DBL_ATTR_RHS
+
+-- | LP dual solution warm start
+dBL_ATTR_DSTART :: String
+dBL_ATTR_DSTART = #const_str GRB_DBL_ATTR_DSTART
+
+-- | LP dual solution warm start
+dBL_ATTR_DSTART_PTR :: CString
+dBL_ATTR_DSTART_PTR = #const_cstr GRB_DBL_ATTR_DSTART
+
+-- | Sense ('<', '>', or '=')
+cHAR_ATTR_SENSE :: String
+cHAR_ATTR_SENSE = #const_str GRB_CHAR_ATTR_SENSE
+
+-- | Sense ('<', '>', or '=')
+cHAR_ATTR_SENSE_PTR :: CString
+cHAR_ATTR_SENSE_PTR = #const_cstr GRB_CHAR_ATTR_SENSE
+
+-- | Lazy constraint?
+iNT_ATTR_LAZY :: String
+iNT_ATTR_LAZY = #const_str GRB_INT_ATTR_LAZY
+
+-- | Lazy constraint?
+iNT_ATTR_LAZY_PTR :: CString
+iNT_ATTR_LAZY_PTR = #const_cstr GRB_INT_ATTR_LAZY
+
 -- /* Quadratic constraint attributes */
--- 
--- #define GRB_STR_ATTR_QCTAG    "QCTag"   /* quadratic constraint tags */
--- #define GRB_DBL_ATTR_QCRHS    "QCRHS"   /* QC RHS */
--- #define GRB_CHAR_ATTR_QCSENSE "QCSense" /* QC sense ('<', '>', or '=') */
--- #define GRB_STR_ATTR_QCNAME   "QCName"  /* QC name */
--- 
+
+-- | quadratic constraint tags
+sTR_ATTR_QCTAG :: String
+sTR_ATTR_QCTAG = #const_str GRB_STR_ATTR_QCTAG
+
+-- | quadratic constraint tags
+sTR_ATTR_QCTAG_PTR :: CString
+sTR_ATTR_QCTAG_PTR = #const_cstr GRB_STR_ATTR_QCTAG
+
+-- | QC RHS
+dBL_ATTR_QCRHS :: String
+dBL_ATTR_QCRHS = #const_str GRB_DBL_ATTR_QCRHS
+
+-- | QC RHS
+dBL_ATTR_QCRHS_PTR :: CString
+dBL_ATTR_QCRHS_PTR = #const_cstr GRB_DBL_ATTR_QCRHS
+
+-- | QC name
+sTR_ATTR_QCNAME :: String
+sTR_ATTR_QCNAME = #const_str GRB_STR_ATTR_QCNAME
+
+-- | QC name
+sTR_ATTR_QCNAME_PTR :: CString
+sTR_ATTR_QCNAME_PTR = #const_cstr GRB_STR_ATTR_QCNAME
+
 -- /* General constraint attributes */
--- 
--- #define GRB_INT_ATTR_GENCONSTRTYPE  "GenConstrType"  /* Type of general constraint */
--- #define GRB_STR_ATTR_GENCONSTRNAME  "GenConstrName"  /* Name of general constraint */
--- 
+
+-- | Type of general constraint
+iNT_ATTR_GENCONSTRTYPE :: String
+iNT_ATTR_GENCONSTRTYPE = #const_str GRB_INT_ATTR_GENCONSTRTYPE
+
+-- | Type of general constraint
+iNT_ATTR_GENCONSTRTYPE_PTR :: CString
+iNT_ATTR_GENCONSTRTYPE_PTR = #const_cstr GRB_INT_ATTR_GENCONSTRTYPE
+
+-- | Name of general constraint
+sTR_ATTR_GENCONSTRNAME :: String
+sTR_ATTR_GENCONSTRNAME = #const_str GRB_STR_ATTR_GENCONSTRNAME
+
+-- | Name of general constraint
+sTR_ATTR_GENCONSTRNAME_PTR :: CString
+sTR_ATTR_GENCONSTRNAME_PTR = #const_cstr GRB_STR_ATTR_GENCONSTRNAME
+
 -- /* General function constraint attributes */
--- 
--- #define GRB_INT_ATTR_FUNCPIECES      "FuncPieces"       /* An option for PWL translation */
--- #define GRB_DBL_ATTR_FUNCPIECEERROR  "FuncPieceError"   /* An option for PWL translation */
--- #define GRB_DBL_ATTR_FUNCPIECELENGTH "FuncPieceLength"  /* An option for PWL translation */
--- #define GRB_DBL_ATTR_FUNCPIECERATIO  "FuncPieceRatio"   /* An option for PWL translation */
--- #define GRB_INT_ATTR_FUNCNONLINEAR   "FuncNonlinear"    /* An option for PWL translation */
--- 
+
+-- | An option for PWL translation
+iNT_ATTR_FUNCPIECES :: String
+iNT_ATTR_FUNCPIECES = #const_str GRB_INT_ATTR_FUNCPIECES
+
+-- | An option for PWL translation
+iNT_ATTR_FUNCPIECES_PTR :: CString
+iNT_ATTR_FUNCPIECES_PTR = #const_cstr GRB_INT_ATTR_FUNCPIECES
+
+-- | An option for PWL translation
+dBL_ATTR_FUNCPIECEERROR :: String
+dBL_ATTR_FUNCPIECEERROR = #const_str GRB_DBL_ATTR_FUNCPIECEERROR
+
+-- | An option for PWL translation
+dBL_ATTR_FUNCPIECEERROR_PTR :: CString
+dBL_ATTR_FUNCPIECEERROR_PTR = #const_cstr GRB_DBL_ATTR_FUNCPIECEERROR
+
+-- | An option for PWL translation
+dBL_ATTR_FUNCPIECERATIO :: String
+dBL_ATTR_FUNCPIECERATIO = #const_str GRB_DBL_ATTR_FUNCPIECERATIO
+
+-- | An option for PWL translation
+dBL_ATTR_FUNCPIECERATIO_PTR :: CString
+dBL_ATTR_FUNCPIECERATIO_PTR = #const_cstr GRB_DBL_ATTR_FUNCPIECERATIO
+
+-- | An option for PWL translation
+iNT_ATTR_FUNCNONLINEAR :: String
+iNT_ATTR_FUNCNONLINEAR = #const_str GRB_INT_ATTR_FUNCNONLINEAR
+
+-- | An option for PWL translation
+iNT_ATTR_FUNCNONLINEAR_PTR :: CString
+iNT_ATTR_FUNCNONLINEAR_PTR = #const_cstr GRB_INT_ATTR_FUNCNONLINEAR
+
 -- /* Model statistics */
--- 
--- #define GRB_DBL_ATTR_MAX_COEFF      "MaxCoeff"     /* Max (abs) nz coeff in A */
--- #define GRB_DBL_ATTR_MIN_COEFF      "MinCoeff"     /* Min (abs) nz coeff in A */
--- #define GRB_DBL_ATTR_MAX_BOUND      "MaxBound"     /* Max (abs) finite var bd */
--- #define GRB_DBL_ATTR_MIN_BOUND      "MinBound"     /* Min (abs) var bd */
--- #define GRB_DBL_ATTR_MAX_OBJ_COEFF  "MaxObjCoeff"  /* Max (abs) obj coeff */
--- #define GRB_DBL_ATTR_MIN_OBJ_COEFF  "MinObjCoeff"  /* Min (abs) obj coeff */
--- #define GRB_DBL_ATTR_MAX_RHS        "MaxRHS"       /* Max (abs) rhs coeff */
--- #define GRB_DBL_ATTR_MIN_RHS        "MinRHS"       /* Min (abs) rhs coeff */
--- #define GRB_DBL_ATTR_MAX_QCCOEFF    "MaxQCCoeff"   /* Max (abs) nz coeff in Q */
--- #define GRB_DBL_ATTR_MIN_QCCOEFF    "MinQCCoeff"   /* Min (abs) nz coeff in Q */
--- #define GRB_DBL_ATTR_MAX_QOBJ_COEFF "MaxQObjCoeff" /* Max (abs) obj coeff of quadratic part */
--- #define GRB_DBL_ATTR_MIN_QOBJ_COEFF "MinQObjCoeff" /* Min (abs) obj coeff of quadratic part */
--- #define GRB_DBL_ATTR_MAX_QCLCOEFF   "MaxQCLCoeff"  /* Max (abs) nz coeff in linear part of Q */
--- #define GRB_DBL_ATTR_MIN_QCLCOEFF   "MinQCLCoeff"  /* Min (abs) nz coeff in linear part of Q */
--- #define GRB_DBL_ATTR_MAX_QCRHS      "MaxQCRHS"     /* Max (abs) rhs of Q */
--- #define GRB_DBL_ATTR_MIN_QCRHS      "MinQCRHS"     /* Min (abs) rhs of Q */
--- 
+
+-- | Max (abs) nz coeff in A
+dBL_ATTR_MAX_COEFF :: String
+dBL_ATTR_MAX_COEFF = #const_str GRB_DBL_ATTR_MAX_COEFF
+
+-- | Max (abs) nz coeff in A
+dBL_ATTR_MAX_COEFF_PTR :: CString
+dBL_ATTR_MAX_COEFF_PTR = #const_cstr GRB_DBL_ATTR_MAX_COEFF
+
+-- | Min (abs) nz coeff in A
+dBL_ATTR_MIN_COEFF :: String
+dBL_ATTR_MIN_COEFF = #const_str GRB_DBL_ATTR_MIN_COEFF
+
+-- | Min (abs) nz coeff in A
+dBL_ATTR_MIN_COEFF_PTR :: CString
+dBL_ATTR_MIN_COEFF_PTR = #const_cstr GRB_DBL_ATTR_MIN_COEFF
+
+-- | Max (abs) finite var bd
+dBL_ATTR_MAX_BOUND :: String
+dBL_ATTR_MAX_BOUND = #const_str GRB_DBL_ATTR_MAX_BOUND
+
+-- | Max (abs) finite var bd
+dBL_ATTR_MAX_BOUND_PTR :: CString
+dBL_ATTR_MAX_BOUND_PTR = #const_cstr GRB_DBL_ATTR_MAX_BOUND
+
+-- | Min (abs) var bd
+dBL_ATTR_MIN_BOUND :: String
+dBL_ATTR_MIN_BOUND = #const_str GRB_DBL_ATTR_MIN_BOUND
+
+-- | Min (abs) var bd
+dBL_ATTR_MIN_BOUND_PTR :: CString
+dBL_ATTR_MIN_BOUND_PTR = #const_cstr GRB_DBL_ATTR_MIN_BOUND
+
+-- | Max (abs) obj coeff
+dBL_ATTR_MAX_OBJ_COEFF :: String
+dBL_ATTR_MAX_OBJ_COEFF = #const_str GRB_DBL_ATTR_MAX_OBJ_COEFF
+
+-- | Max (abs) obj coeff
+dBL_ATTR_MAX_OBJ_COEFF_PTR :: CString
+dBL_ATTR_MAX_OBJ_COEFF_PTR = #const_cstr GRB_DBL_ATTR_MAX_OBJ_COEFF
+
+-- | Min (abs) obj coeff
+dBL_ATTR_MIN_OBJ_COEFF :: String
+dBL_ATTR_MIN_OBJ_COEFF = #const_str GRB_DBL_ATTR_MIN_OBJ_COEFF
+
+-- | Min (abs) obj coeff
+dBL_ATTR_MIN_OBJ_COEFF_PTR :: CString
+dBL_ATTR_MIN_OBJ_COEFF_PTR = #const_cstr GRB_DBL_ATTR_MIN_OBJ_COEFF
+
+-- | Max (abs) rhs coeff
+dBL_ATTR_MAX_RHS :: String
+dBL_ATTR_MAX_RHS = #const_str GRB_DBL_ATTR_MAX_RHS
+
+-- | Max (abs) rhs coeff
+dBL_ATTR_MAX_RHS_PTR :: CString
+dBL_ATTR_MAX_RHS_PTR = #const_cstr GRB_DBL_ATTR_MAX_RHS
+
+-- | Min (abs) rhs coeff
+dBL_ATTR_MIN_RHS :: String
+dBL_ATTR_MIN_RHS = #const_str GRB_DBL_ATTR_MIN_RHS
+
+-- | Min (abs) rhs coeff
+dBL_ATTR_MIN_RHS_PTR :: CString
+dBL_ATTR_MIN_RHS_PTR = #const_cstr GRB_DBL_ATTR_MIN_RHS
+
+-- | Max (abs) nz coeff in Q
+dBL_ATTR_MAX_QCCOEFF :: String
+dBL_ATTR_MAX_QCCOEFF = #const_str GRB_DBL_ATTR_MAX_QCCOEFF
+
+-- | Max (abs) nz coeff in Q
+dBL_ATTR_MAX_QCCOEFF_PTR :: CString
+dBL_ATTR_MAX_QCCOEFF_PTR = #const_cstr GRB_DBL_ATTR_MAX_QCCOEFF
+
+-- | Min (abs) nz coeff in Q
+dBL_ATTR_MIN_QCCOEFF :: String
+dBL_ATTR_MIN_QCCOEFF = #const_str GRB_DBL_ATTR_MIN_QCCOEFF
+
+-- | Min (abs) nz coeff in Q
+dBL_ATTR_MIN_QCCOEFF_PTR :: CString
+dBL_ATTR_MIN_QCCOEFF_PTR = #const_cstr GRB_DBL_ATTR_MIN_QCCOEFF
+
+-- | Max (abs) nz coeff in linear part of Q
+dBL_ATTR_MAX_QCLCOEFF :: String
+dBL_ATTR_MAX_QCLCOEFF = #const_str GRB_DBL_ATTR_MAX_QCLCOEFF
+
+-- | Max (abs) nz coeff in linear part of Q
+dBL_ATTR_MAX_QCLCOEFF_PTR :: CString
+dBL_ATTR_MAX_QCLCOEFF_PTR = #const_cstr GRB_DBL_ATTR_MAX_QCLCOEFF
+
+-- | Min (abs) nz coeff in linear part of Q
+dBL_ATTR_MIN_QCLCOEFF :: String
+dBL_ATTR_MIN_QCLCOEFF = #const_str GRB_DBL_ATTR_MIN_QCLCOEFF
+
+-- | Min (abs) nz coeff in linear part of Q
+dBL_ATTR_MIN_QCLCOEFF_PTR :: CString
+dBL_ATTR_MIN_QCLCOEFF_PTR = #const_cstr GRB_DBL_ATTR_MIN_QCLCOEFF
+
+-- | Max (abs) rhs of Q
+dBL_ATTR_MAX_QCRHS :: String
+dBL_ATTR_MAX_QCRHS = #const_str GRB_DBL_ATTR_MAX_QCRHS
+
+-- | Max (abs) rhs of Q
+dBL_ATTR_MAX_QCRHS_PTR :: CString
+dBL_ATTR_MAX_QCRHS_PTR = #const_cstr GRB_DBL_ATTR_MAX_QCRHS
+
+-- | Min (abs) rhs of Q
+dBL_ATTR_MIN_QCRHS :: String
+dBL_ATTR_MIN_QCRHS = #const_str GRB_DBL_ATTR_MIN_QCRHS
+
+-- | Min (abs) rhs of Q
+dBL_ATTR_MIN_QCRHS_PTR :: CString
+dBL_ATTR_MIN_QCRHS_PTR = #const_cstr GRB_DBL_ATTR_MIN_QCRHS
+
 -- /* Model solution attributes */
--- 
--- #define GRB_DBL_ATTR_RUNTIME       "Runtime"     /* Run time for optimization */
--- #define GRB_DBL_ATTR_WORK          "Work"        /* Work for optimization */
--- #define GRB_INT_ATTR_STATUS        "Status"      /* Optimization status */
--- #define GRB_DBL_ATTR_OBJVAL        "ObjVal"      /* Solution objective */
--- #define GRB_DBL_ATTR_OBJBOUND      "ObjBound"    /* Best bound on solution */
--- #define GRB_DBL_ATTR_OBJBOUNDC     "ObjBoundC"   /* Continuous bound */
--- #define GRB_DBL_ATTR_POOLOBJBOUND  "PoolObjBound" /* Best bound on pool solution */
--- #define GRB_DBL_ATTR_POOLOBJVAL    "PoolObjVal"  /* Solution objective, depends on solutionnumber */
--- #define GRB_DBL_ATTR_MIPGAP        "MIPGap"      /* MIP optimality gap */
--- #define GRB_INT_ATTR_SOLCOUNT      "SolCount"    /* # of solutions found */
--- #define GRB_DBL_ATTR_ITERCOUNT     "IterCount"   /* Iters performed (simplex) */
--- #define GRB_INT_ATTR_BARITERCOUNT  "BarIterCount" /* Iters performed (barrier) */
--- #define GRB_DBL_ATTR_NODECOUNT     "NodeCount"    /* Nodes explored (B&C) */
--- #define GRB_DBL_ATTR_OPENNODECOUNT "OpenNodeCount" /* Unexplored nodes (B&C) */
--- #define GRB_INT_ATTR_HASDUALNORM   "HasDualNorm"  /* 0, no basis,
---                                                      1, has basis, so can be computed
---                                                      2, available */
--- #define GRB_INT_ATTR_CONCURRENTWINMETHOD  "ConcurrentWinMethod"      /* method that solved LP using concurrent */
--- 
+
+-- | Run time for optimization
+dBL_ATTR_RUNTIME :: String
+dBL_ATTR_RUNTIME = #const_str GRB_DBL_ATTR_RUNTIME
+
+-- | Run time for optimization
+dBL_ATTR_RUNTIME_PTR :: CString
+dBL_ATTR_RUNTIME_PTR = #const_cstr GRB_DBL_ATTR_RUNTIME
+
+-- | Work for optimization
+dBL_ATTR_WORK :: String
+dBL_ATTR_WORK = #const_str GRB_DBL_ATTR_WORK
+
+-- | Work for optimization
+dBL_ATTR_WORK_PTR :: CString
+dBL_ATTR_WORK_PTR = #const_cstr GRB_DBL_ATTR_WORK
+
+-- | Optimization status
+iNT_ATTR_STATUS :: String
+iNT_ATTR_STATUS = #const_str GRB_INT_ATTR_STATUS
+
+-- | Optimization status
+iNT_ATTR_STATUS_PTR :: CString
+iNT_ATTR_STATUS_PTR = #const_cstr GRB_INT_ATTR_STATUS
+
+-- | Solution objective
+dBL_ATTR_OBJVAL :: String
+dBL_ATTR_OBJVAL = #const_str GRB_DBL_ATTR_OBJVAL
+
+-- | Solution objective
+dBL_ATTR_OBJVAL_PTR :: CString
+dBL_ATTR_OBJVAL_PTR = #const_cstr GRB_DBL_ATTR_OBJVAL
+
+-- | Best bound on solution
+dBL_ATTR_OBJBOUND :: String
+dBL_ATTR_OBJBOUND = #const_str GRB_DBL_ATTR_OBJBOUND
+
+-- | Best bound on solution
+dBL_ATTR_OBJBOUND_PTR :: CString
+dBL_ATTR_OBJBOUND_PTR = #const_cstr GRB_DBL_ATTR_OBJBOUND
+
+-- | Continuous bound
+dBL_ATTR_OBJBOUNDC :: String
+dBL_ATTR_OBJBOUNDC = #const_str GRB_DBL_ATTR_OBJBOUNDC
+
+-- | Continuous bound
+dBL_ATTR_OBJBOUNDC_PTR :: CString
+dBL_ATTR_OBJBOUNDC_PTR = #const_cstr GRB_DBL_ATTR_OBJBOUNDC
+
+-- | Best bound on pool solution
+dBL_ATTR_POOLOBJBOUND :: String
+dBL_ATTR_POOLOBJBOUND = #const_str GRB_DBL_ATTR_POOLOBJBOUND
+
+-- | Best bound on pool solution
+dBL_ATTR_POOLOBJBOUND_PTR :: CString
+dBL_ATTR_POOLOBJBOUND_PTR = #const_cstr GRB_DBL_ATTR_POOLOBJBOUND
+
+-- | Solution objective, depends on solutionnumber
+dBL_ATTR_POOLOBJVAL :: String
+dBL_ATTR_POOLOBJVAL = #const_str GRB_DBL_ATTR_POOLOBJVAL
+
+-- | Solution objective, depends on solutionnumber
+dBL_ATTR_POOLOBJVAL_PTR :: CString
+dBL_ATTR_POOLOBJVAL_PTR = #const_cstr GRB_DBL_ATTR_POOLOBJVAL
+
+-- | MIP optimality gap
+dBL_ATTR_MIPGAP :: String
+dBL_ATTR_MIPGAP = #const_str GRB_DBL_ATTR_MIPGAP
+
+-- | MIP optimality gap
+dBL_ATTR_MIPGAP_PTR :: CString
+dBL_ATTR_MIPGAP_PTR = #const_cstr GRB_DBL_ATTR_MIPGAP
+
+-- | # of solutions found
+iNT_ATTR_SOLCOUNT :: String
+iNT_ATTR_SOLCOUNT = #const_str GRB_INT_ATTR_SOLCOUNT
+
+-- | # of solutions found
+iNT_ATTR_SOLCOUNT_PTR :: CString
+iNT_ATTR_SOLCOUNT_PTR = #const_cstr GRB_INT_ATTR_SOLCOUNT
+
+-- | Iters performed (simplex)
+dBL_ATTR_ITERCOUNT :: String
+dBL_ATTR_ITERCOUNT = #const_str GRB_DBL_ATTR_ITERCOUNT
+
+-- | Iters performed (simplex)
+dBL_ATTR_ITERCOUNT_PTR :: CString
+dBL_ATTR_ITERCOUNT_PTR = #const_cstr GRB_DBL_ATTR_ITERCOUNT
+
+-- | Iters performed (barrier)
+iNT_ATTR_BARITERCOUNT :: String
+iNT_ATTR_BARITERCOUNT = #const_str GRB_INT_ATTR_BARITERCOUNT
+
+-- | Iters performed (barrier)
+iNT_ATTR_BARITERCOUNT_PTR :: CString
+iNT_ATTR_BARITERCOUNT_PTR = #const_cstr GRB_INT_ATTR_BARITERCOUNT
+
+-- | Nodes explored (B&C)
+dBL_ATTR_NODECOUNT :: String
+dBL_ATTR_NODECOUNT = #const_str GRB_DBL_ATTR_NODECOUNT
+
+-- | Nodes explored (B&C)
+dBL_ATTR_NODECOUNT_PTR :: CString
+dBL_ATTR_NODECOUNT_PTR = #const_cstr GRB_DBL_ATTR_NODECOUNT
+
+-- |
+--
+-- 0, no basis,
+-- 1, has basis, so can be computed
+-- 2, available
+iNT_ATTR_HASDUALNORM :: String
+iNT_ATTR_HASDUALNORM = #const_str GRB_INT_ATTR_HASDUALNORM
+
+-- |
+--
+-- 0, no basis,
+-- 1, has basis, so can be computed
+-- 2, available
+iNT_ATTR_HASDUALNORM_PTR :: CString
+iNT_ATTR_HASDUALNORM_PTR = #const_cstr GRB_INT_ATTR_HASDUALNORM
+
+-- | method that solved LP using concurrent
+iNT_ATTR_CONCURRENTWINMETHOD :: String
+iNT_ATTR_CONCURRENTWINMETHOD = #const_str GRB_INT_ATTR_CONCURRENTWINMETHOD
+
+-- | method that solved LP using concurrent
+iNT_ATTR_CONCURRENTWINMETHOD_PTR :: CString
+iNT_ATTR_CONCURRENTWINMETHOD_PTR = #const_cstr GRB_INT_ATTR_CONCURRENTWINMETHOD
+
 -- /* Variable attributes related to the current solution */
--- 
--- #define GRB_DBL_ATTR_X         "X"         /* Solution value */
--- #define GRB_DBL_ATTR_XN        "Xn"        /* Alternate MIP solution, depends on solutionnumber */
--- #define GRB_DBL_ATTR_BARX      "BarX"      /* Best barrier primal iterate */
--- #define GRB_DBL_ATTR_BARPI     "BarPi"     /* Best barrier dual iterate */
--- #define GRB_DBL_ATTR_RC        "RC"        /* Reduced costs */
--- #define GRB_DBL_ATTR_VDUALNORM "VDualNorm" /* Dual norm square */
--- #define GRB_INT_ATTR_VBASIS    "VBasis"    /* Variable basis status */
--- 
+
+-- | Solution value
+dBL_ATTR_X :: String
+dBL_ATTR_X = #const_str GRB_DBL_ATTR_X
+
+-- | Solution value
+dBL_ATTR_X_PTR :: CString
+dBL_ATTR_X_PTR = #const_cstr GRB_DBL_ATTR_X
+
+-- | Alternate MIP solution, depends on solutionnumber
+dBL_ATTR_XN :: String
+dBL_ATTR_XN = #const_str GRB_DBL_ATTR_XN
+
+-- | Alternate MIP solution, depends on solutionnumber
+dBL_ATTR_XN_PTR :: CString
+dBL_ATTR_XN_PTR = #const_cstr GRB_DBL_ATTR_XN
+
+-- | Best barrier primal iterate
+dBL_ATTR_BARX :: String
+dBL_ATTR_BARX = #const_str GRB_DBL_ATTR_BARX
+
+-- | Best barrier primal iterate
+dBL_ATTR_BARX_PTR :: CString
+dBL_ATTR_BARX_PTR = #const_cstr GRB_DBL_ATTR_BARX
+
+-- | Best barrier dual iterate
+dBL_ATTR_BARPI :: String
+dBL_ATTR_BARPI = #const_str GRB_DBL_ATTR_BARPI
+
+-- | Best barrier dual iterate
+dBL_ATTR_BARPI_PTR :: CString
+dBL_ATTR_BARPI_PTR = #const_cstr GRB_DBL_ATTR_BARPI
+
+-- | Reduced costs
+dBL_ATTR_RC :: String
+dBL_ATTR_RC = #const_str GRB_DBL_ATTR_RC
+
+-- | Reduced costs
+dBL_ATTR_RC_PTR :: CString
+dBL_ATTR_RC_PTR = #const_cstr GRB_DBL_ATTR_RC
+
+-- | Variable basis status
+iNT_ATTR_VBASIS :: String
+iNT_ATTR_VBASIS = #const_str GRB_INT_ATTR_VBASIS
+
+-- | Variable basis status
+iNT_ATTR_VBASIS_PTR :: CString
+iNT_ATTR_VBASIS_PTR = #const_cstr GRB_INT_ATTR_VBASIS
+
 -- /* Constraint attributes related to the current solution */
--- 
--- #define GRB_DBL_ATTR_PI        "Pi"        /* Dual value */
--- #define GRB_DBL_ATTR_QCPI      "QCPi"      /* Dual value for QC */
--- #define GRB_DBL_ATTR_SLACK     "Slack"     /* Constraint slack */
--- #define GRB_DBL_ATTR_QCSLACK   "QCSlack"   /* QC Constraint slack */
--- #define GRB_DBL_ATTR_CDUALNORM "CDualNorm" /* Dual norm square */
--- #define GRB_INT_ATTR_CBASIS    "CBasis"    /* Constraint basis status */
--- 
+
+-- | Dual value
+dBL_ATTR_PI :: String
+dBL_ATTR_PI = #const_str GRB_DBL_ATTR_PI
+
+-- | Dual value
+dBL_ATTR_PI_PTR :: CString
+dBL_ATTR_PI_PTR = #const_cstr GRB_DBL_ATTR_PI
+
+-- | Dual value for QC
+dBL_ATTR_QCPI :: String
+dBL_ATTR_QCPI = #const_str GRB_DBL_ATTR_QCPI
+
+-- | Dual value for QC
+dBL_ATTR_QCPI_PTR :: CString
+dBL_ATTR_QCPI_PTR = #const_cstr GRB_DBL_ATTR_QCPI
+
+-- | Constraint slack
+dBL_ATTR_SLACK :: String
+dBL_ATTR_SLACK = #const_str GRB_DBL_ATTR_SLACK
+
+-- | Constraint slack
+dBL_ATTR_SLACK_PTR :: CString
+dBL_ATTR_SLACK_PTR = #const_cstr GRB_DBL_ATTR_SLACK
+
+-- | QC Constraint slack
+dBL_ATTR_QCSLACK :: String
+dBL_ATTR_QCSLACK = #const_str GRB_DBL_ATTR_QCSLACK
+
+-- | QC Constraint slack
+dBL_ATTR_QCSLACK_PTR :: CString
+dBL_ATTR_QCSLACK_PTR = #const_cstr GRB_DBL_ATTR_QCSLACK
+
+-- | Constraint basis status
+iNT_ATTR_CBASIS :: String
+iNT_ATTR_CBASIS = #const_str GRB_INT_ATTR_CBASIS
+
+-- | Constraint basis status
+iNT_ATTR_CBASIS_PTR :: CString
+iNT_ATTR_CBASIS_PTR = #const_cstr GRB_INT_ATTR_CBASIS
+
 -- /* Solution quality attributes */
--- 
--- #define GRB_DBL_ATTR_MAX_VIO                "MaxVio"
--- #define GRB_DBL_ATTR_BOUND_VIO              "BoundVio"
--- #define GRB_DBL_ATTR_BOUND_SVIO             "BoundSVio"
--- #define GRB_INT_ATTR_BOUND_VIO_INDEX        "BoundVioIndex"
--- #define GRB_INT_ATTR_BOUND_SVIO_INDEX       "BoundSVioIndex"
--- #define GRB_DBL_ATTR_BOUND_VIO_SUM          "BoundVioSum"
--- #define GRB_DBL_ATTR_BOUND_SVIO_SUM         "BoundSVioSum"
--- #define GRB_DBL_ATTR_CONSTR_VIO             "ConstrVio"
--- #define GRB_DBL_ATTR_CONSTR_SVIO            "ConstrSVio"
--- #define GRB_INT_ATTR_CONSTR_VIO_INDEX       "ConstrVioIndex"
--- #define GRB_INT_ATTR_CONSTR_SVIO_INDEX      "ConstrSVioIndex"
--- #define GRB_DBL_ATTR_CONSTR_VIO_SUM         "ConstrVioSum"
--- #define GRB_DBL_ATTR_CONSTR_SVIO_SUM        "ConstrSVioSum"
--- #define GRB_DBL_ATTR_CONSTR_RESIDUAL        "ConstrResidual"
--- #define GRB_DBL_ATTR_CONSTR_SRESIDUAL       "ConstrSResidual"
--- #define GRB_INT_ATTR_CONSTR_RESIDUAL_INDEX  "ConstrResidualIndex"
--- #define GRB_INT_ATTR_CONSTR_SRESIDUAL_INDEX "ConstrSResidualIndex"
--- #define GRB_DBL_ATTR_CONSTR_RESIDUAL_SUM    "ConstrResidualSum"
--- #define GRB_DBL_ATTR_CONSTR_SRESIDUAL_SUM   "ConstrSResidualSum"
--- #define GRB_DBL_ATTR_DUAL_VIO               "DualVio"
--- #define GRB_DBL_ATTR_DUAL_SVIO              "DualSVio"
--- #define GRB_INT_ATTR_DUAL_VIO_INDEX         "DualVioIndex"
--- #define GRB_INT_ATTR_DUAL_SVIO_INDEX        "DualSVioIndex"
--- #define GRB_DBL_ATTR_DUAL_VIO_SUM           "DualVioSum"
--- #define GRB_DBL_ATTR_DUAL_SVIO_SUM          "DualSVioSum"
--- #define GRB_DBL_ATTR_DUAL_RESIDUAL          "DualResidual"
--- #define GRB_DBL_ATTR_DUAL_SRESIDUAL         "DualSResidual"
--- #define GRB_INT_ATTR_DUAL_RESIDUAL_INDEX    "DualResidualIndex"
--- #define GRB_INT_ATTR_DUAL_SRESIDUAL_INDEX   "DualSResidualIndex"
--- #define GRB_DBL_ATTR_DUAL_RESIDUAL_SUM      "DualResidualSum"
--- #define GRB_DBL_ATTR_DUAL_SRESIDUAL_SUM     "DualSResidualSum"
--- #define GRB_DBL_ATTR_INT_VIO                "IntVio"
--- #define GRB_INT_ATTR_INT_VIO_INDEX          "IntVioIndex"
--- #define GRB_DBL_ATTR_INT_VIO_SUM            "IntVioSum"
--- #define GRB_DBL_ATTR_COMPL_VIO              "ComplVio"
--- #define GRB_INT_ATTR_COMPL_VIO_INDEX        "ComplVioIndex"
--- #define GRB_DBL_ATTR_COMPL_VIO_SUM          "ComplVioSum"
--- #define GRB_DBL_ATTR_KAPPA                  "Kappa"
--- #define GRB_DBL_ATTR_KAPPA_EXACT            "KappaExact"
--- #define GRB_DBL_ATTR_N2KAPPA                "N2Kappa"
--- 
+
+dBL_ATTR_MAX_VIO :: String
+dBL_ATTR_MAX_VIO = #const_str GRB_DBL_ATTR_MAX_VIO
+
+dBL_ATTR_MAX_VIO_PTR :: CString
+dBL_ATTR_MAX_VIO_PTR = #const_cstr GRB_DBL_ATTR_MAX_VIO
+
+dBL_ATTR_BOUND_VIO :: String
+dBL_ATTR_BOUND_VIO = #const_str GRB_DBL_ATTR_BOUND_VIO
+
+dBL_ATTR_BOUND_VIO_PTR :: CString
+dBL_ATTR_BOUND_VIO_PTR = #const_cstr GRB_DBL_ATTR_BOUND_VIO
+
+dBL_ATTR_BOUND_SVIO :: String
+dBL_ATTR_BOUND_SVIO = #const_str GRB_DBL_ATTR_BOUND_SVIO
+
+dBL_ATTR_BOUND_SVIO_PTR :: CString
+dBL_ATTR_BOUND_SVIO_PTR = #const_cstr GRB_DBL_ATTR_BOUND_SVIO
+
+iNT_ATTR_BOUND_VIO_INDEX :: String
+iNT_ATTR_BOUND_VIO_INDEX = #const_str GRB_INT_ATTR_BOUND_VIO_INDEX
+
+iNT_ATTR_BOUND_VIO_INDEX_PTR :: CString
+iNT_ATTR_BOUND_VIO_INDEX_PTR = #const_cstr GRB_INT_ATTR_BOUND_VIO_INDEX
+
+iNT_ATTR_BOUND_SVIO_INDEX :: String
+iNT_ATTR_BOUND_SVIO_INDEX = #const_str GRB_INT_ATTR_BOUND_SVIO_INDEX
+
+iNT_ATTR_BOUND_SVIO_INDEX_PTR :: CString
+iNT_ATTR_BOUND_SVIO_INDEX_PTR = #const_cstr GRB_INT_ATTR_BOUND_SVIO_INDEX
+
+dBL_ATTR_BOUND_VIO_SUM :: String
+dBL_ATTR_BOUND_VIO_SUM = #const_str GRB_DBL_ATTR_BOUND_VIO_SUM
+
+dBL_ATTR_BOUND_VIO_SUM_PTR :: CString
+dBL_ATTR_BOUND_VIO_SUM_PTR = #const_cstr GRB_DBL_ATTR_BOUND_VIO_SUM
+
+dBL_ATTR_BOUND_SVIO_SUM :: String
+dBL_ATTR_BOUND_SVIO_SUM = #const_str GRB_DBL_ATTR_BOUND_SVIO_SUM
+
+dBL_ATTR_BOUND_SVIO_SUM_PTR :: CString
+dBL_ATTR_BOUND_SVIO_SUM_PTR = #const_cstr GRB_DBL_ATTR_BOUND_SVIO_SUM
+
+dBL_ATTR_CONSTR_VIO :: String
+dBL_ATTR_CONSTR_VIO = #const_str GRB_DBL_ATTR_CONSTR_VIO
+
+dBL_ATTR_CONSTR_VIO_PTR :: CString
+dBL_ATTR_CONSTR_VIO_PTR = #const_cstr GRB_DBL_ATTR_CONSTR_VIO
+
+dBL_ATTR_CONSTR_SVIO :: String
+dBL_ATTR_CONSTR_SVIO = #const_str GRB_DBL_ATTR_CONSTR_SVIO
+
+dBL_ATTR_CONSTR_SVIO_PTR :: CString
+dBL_ATTR_CONSTR_SVIO_PTR = #const_cstr GRB_DBL_ATTR_CONSTR_SVIO
+
+iNT_ATTR_CONSTR_VIO_INDEX :: String
+iNT_ATTR_CONSTR_VIO_INDEX = #const_str GRB_INT_ATTR_CONSTR_VIO_INDEX
+
+iNT_ATTR_CONSTR_VIO_INDEX_PTR :: CString
+iNT_ATTR_CONSTR_VIO_INDEX_PTR = #const_cstr GRB_INT_ATTR_CONSTR_VIO_INDEX
+
+iNT_ATTR_CONSTR_SVIO_INDEX :: String
+iNT_ATTR_CONSTR_SVIO_INDEX = #const_str GRB_INT_ATTR_CONSTR_SVIO_INDEX
+
+iNT_ATTR_CONSTR_SVIO_INDEX_PTR :: CString
+iNT_ATTR_CONSTR_SVIO_INDEX_PTR = #const_cstr GRB_INT_ATTR_CONSTR_SVIO_INDEX
+
+dBL_ATTR_CONSTR_VIO_SUM :: String
+dBL_ATTR_CONSTR_VIO_SUM = #const_str GRB_DBL_ATTR_CONSTR_VIO_SUM
+
+dBL_ATTR_CONSTR_VIO_SUM_PTR :: CString
+dBL_ATTR_CONSTR_VIO_SUM_PTR = #const_cstr GRB_DBL_ATTR_CONSTR_VIO_SUM
+
+dBL_ATTR_CONSTR_SVIO_SUM :: String
+dBL_ATTR_CONSTR_SVIO_SUM = #const_str GRB_DBL_ATTR_CONSTR_SVIO_SUM
+
+dBL_ATTR_CONSTR_SVIO_SUM_PTR :: CString
+dBL_ATTR_CONSTR_SVIO_SUM_PTR = #const_cstr GRB_DBL_ATTR_CONSTR_SVIO_SUM
+
+dBL_ATTR_CONSTR_RESIDUAL :: String
+dBL_ATTR_CONSTR_RESIDUAL = #const_str GRB_DBL_ATTR_CONSTR_RESIDUAL
+
+dBL_ATTR_CONSTR_RESIDUAL_PTR :: CString
+dBL_ATTR_CONSTR_RESIDUAL_PTR = #const_cstr GRB_DBL_ATTR_CONSTR_RESIDUAL
+
+dBL_ATTR_CONSTR_SRESIDUAL :: String
+dBL_ATTR_CONSTR_SRESIDUAL = #const_str GRB_DBL_ATTR_CONSTR_SRESIDUAL
+
+dBL_ATTR_CONSTR_SRESIDUAL_PTR :: CString
+dBL_ATTR_CONSTR_SRESIDUAL_PTR = #const_cstr GRB_DBL_ATTR_CONSTR_SRESIDUAL
+
+iNT_ATTR_CONSTR_RESIDUAL_INDEX :: String
+iNT_ATTR_CONSTR_RESIDUAL_INDEX = #const_str GRB_INT_ATTR_CONSTR_RESIDUAL_INDEX
+
+iNT_ATTR_CONSTR_RESIDUAL_INDEX_PTR :: CString
+iNT_ATTR_CONSTR_RESIDUAL_INDEX_PTR = #const_cstr GRB_INT_ATTR_CONSTR_RESIDUAL_INDEX
+
+iNT_ATTR_CONSTR_SRESIDUAL_INDEX :: String
+iNT_ATTR_CONSTR_SRESIDUAL_INDEX = #const_str GRB_INT_ATTR_CONSTR_SRESIDUAL_INDEX
+
+iNT_ATTR_CONSTR_SRESIDUAL_INDEX_PTR :: CString
+iNT_ATTR_CONSTR_SRESIDUAL_INDEX_PTR = #const_cstr GRB_INT_ATTR_CONSTR_SRESIDUAL_INDEX
+
+dBL_ATTR_CONSTR_RESIDUAL_SUM :: String
+dBL_ATTR_CONSTR_RESIDUAL_SUM = #const_str GRB_DBL_ATTR_CONSTR_RESIDUAL_SUM
+
+dBL_ATTR_CONSTR_RESIDUAL_SUM_PTR :: CString
+dBL_ATTR_CONSTR_RESIDUAL_SUM_PTR = #const_cstr GRB_DBL_ATTR_CONSTR_RESIDUAL_SUM
+
+dBL_ATTR_CONSTR_SRESIDUAL_SUM :: String
+dBL_ATTR_CONSTR_SRESIDUAL_SUM = #const_str GRB_DBL_ATTR_CONSTR_SRESIDUAL_SUM
+
+dBL_ATTR_CONSTR_SRESIDUAL_SUM_PTR :: CString
+dBL_ATTR_CONSTR_SRESIDUAL_SUM_PTR = #const_cstr GRB_DBL_ATTR_CONSTR_SRESIDUAL_SUM
+
+dBL_ATTR_DUAL_VIO :: String
+dBL_ATTR_DUAL_VIO = #const_str GRB_DBL_ATTR_DUAL_VIO
+
+dBL_ATTR_DUAL_VIO_PTR :: CString
+dBL_ATTR_DUAL_VIO_PTR = #const_cstr GRB_DBL_ATTR_DUAL_VIO
+
+dBL_ATTR_DUAL_SVIO :: String
+dBL_ATTR_DUAL_SVIO = #const_str GRB_DBL_ATTR_DUAL_SVIO
+
+dBL_ATTR_DUAL_SVIO_PTR :: CString
+dBL_ATTR_DUAL_SVIO_PTR = #const_cstr GRB_DBL_ATTR_DUAL_SVIO
+
+iNT_ATTR_DUAL_VIO_INDEX :: String
+iNT_ATTR_DUAL_VIO_INDEX = #const_str GRB_INT_ATTR_DUAL_VIO_INDEX
+
+iNT_ATTR_DUAL_VIO_INDEX_PTR :: CString
+iNT_ATTR_DUAL_VIO_INDEX_PTR = #const_cstr GRB_INT_ATTR_DUAL_VIO_INDEX
+
+iNT_ATTR_DUAL_SVIO_INDEX :: String
+iNT_ATTR_DUAL_SVIO_INDEX = #const_str GRB_INT_ATTR_DUAL_SVIO_INDEX
+
+iNT_ATTR_DUAL_SVIO_INDEX_PTR :: CString
+iNT_ATTR_DUAL_SVIO_INDEX_PTR = #const_cstr GRB_INT_ATTR_DUAL_SVIO_INDEX
+
+dBL_ATTR_DUAL_VIO_SUM :: String
+dBL_ATTR_DUAL_VIO_SUM = #const_str GRB_DBL_ATTR_DUAL_VIO_SUM
+
+dBL_ATTR_DUAL_VIO_SUM_PTR :: CString
+dBL_ATTR_DUAL_VIO_SUM_PTR = #const_cstr GRB_DBL_ATTR_DUAL_VIO_SUM
+
+dBL_ATTR_DUAL_SVIO_SUM :: String
+dBL_ATTR_DUAL_SVIO_SUM = #const_str GRB_DBL_ATTR_DUAL_SVIO_SUM
+
+dBL_ATTR_DUAL_SVIO_SUM_PTR :: CString
+dBL_ATTR_DUAL_SVIO_SUM_PTR = #const_cstr GRB_DBL_ATTR_DUAL_SVIO_SUM
+
+dBL_ATTR_DUAL_RESIDUAL :: String
+dBL_ATTR_DUAL_RESIDUAL = #const_str GRB_DBL_ATTR_DUAL_RESIDUAL
+
+dBL_ATTR_DUAL_RESIDUAL_PTR :: CString
+dBL_ATTR_DUAL_RESIDUAL_PTR = #const_cstr GRB_DBL_ATTR_DUAL_RESIDUAL
+
+dBL_ATTR_DUAL_SRESIDUAL :: String
+dBL_ATTR_DUAL_SRESIDUAL = #const_str GRB_DBL_ATTR_DUAL_SRESIDUAL
+
+dBL_ATTR_DUAL_SRESIDUAL_PTR :: CString
+dBL_ATTR_DUAL_SRESIDUAL_PTR = #const_cstr GRB_DBL_ATTR_DUAL_SRESIDUAL
+
+iNT_ATTR_DUAL_RESIDUAL_INDEX :: String
+iNT_ATTR_DUAL_RESIDUAL_INDEX = #const_str GRB_INT_ATTR_DUAL_RESIDUAL_INDEX
+
+iNT_ATTR_DUAL_RESIDUAL_INDEX_PTR :: CString
+iNT_ATTR_DUAL_RESIDUAL_INDEX_PTR = #const_cstr GRB_INT_ATTR_DUAL_RESIDUAL_INDEX
+
+iNT_ATTR_DUAL_SRESIDUAL_INDEX :: String
+iNT_ATTR_DUAL_SRESIDUAL_INDEX = #const_str GRB_INT_ATTR_DUAL_SRESIDUAL_INDEX
+
+iNT_ATTR_DUAL_SRESIDUAL_INDEX_PTR :: CString
+iNT_ATTR_DUAL_SRESIDUAL_INDEX_PTR = #const_cstr GRB_INT_ATTR_DUAL_SRESIDUAL_INDEX
+
+dBL_ATTR_DUAL_RESIDUAL_SUM :: String
+dBL_ATTR_DUAL_RESIDUAL_SUM = #const_str GRB_DBL_ATTR_DUAL_RESIDUAL_SUM
+
+dBL_ATTR_DUAL_RESIDUAL_SUM_PTR :: CString
+dBL_ATTR_DUAL_RESIDUAL_SUM_PTR = #const_cstr GRB_DBL_ATTR_DUAL_RESIDUAL_SUM
+
+dBL_ATTR_DUAL_SRESIDUAL_SUM :: String
+dBL_ATTR_DUAL_SRESIDUAL_SUM = #const_str GRB_DBL_ATTR_DUAL_SRESIDUAL_SUM
+
+dBL_ATTR_DUAL_SRESIDUAL_SUM_PTR :: CString
+dBL_ATTR_DUAL_SRESIDUAL_SUM_PTR = #const_cstr GRB_DBL_ATTR_DUAL_SRESIDUAL_SUM
+
+dBL_ATTR_INT_VIO :: String
+dBL_ATTR_INT_VIO = #const_str GRB_DBL_ATTR_INT_VIO
+
+dBL_ATTR_INT_VIO_PTR :: CString
+dBL_ATTR_INT_VIO_PTR = #const_cstr GRB_DBL_ATTR_INT_VIO
+
+iNT_ATTR_INT_VIO_INDEX :: String
+iNT_ATTR_INT_VIO_INDEX = #const_str GRB_INT_ATTR_INT_VIO_INDEX
+
+iNT_ATTR_INT_VIO_INDEX_PTR :: CString
+iNT_ATTR_INT_VIO_INDEX_PTR = #const_cstr GRB_INT_ATTR_INT_VIO_INDEX
+
+dBL_ATTR_INT_VIO_SUM :: String
+dBL_ATTR_INT_VIO_SUM = #const_str GRB_DBL_ATTR_INT_VIO_SUM
+
+dBL_ATTR_INT_VIO_SUM_PTR :: CString
+dBL_ATTR_INT_VIO_SUM_PTR = #const_cstr GRB_DBL_ATTR_INT_VIO_SUM
+
+dBL_ATTR_COMPL_VIO :: String
+dBL_ATTR_COMPL_VIO = #const_str GRB_DBL_ATTR_COMPL_VIO
+
+dBL_ATTR_COMPL_VIO_PTR :: CString
+dBL_ATTR_COMPL_VIO_PTR = #const_cstr GRB_DBL_ATTR_COMPL_VIO
+
+iNT_ATTR_COMPL_VIO_INDEX :: String
+iNT_ATTR_COMPL_VIO_INDEX = #const_str GRB_INT_ATTR_COMPL_VIO_INDEX
+
+iNT_ATTR_COMPL_VIO_INDEX_PTR :: CString
+iNT_ATTR_COMPL_VIO_INDEX_PTR = #const_cstr GRB_INT_ATTR_COMPL_VIO_INDEX
+
+dBL_ATTR_COMPL_VIO_SUM :: String
+dBL_ATTR_COMPL_VIO_SUM = #const_str GRB_DBL_ATTR_COMPL_VIO_SUM
+
+dBL_ATTR_COMPL_VIO_SUM_PTR :: CString
+dBL_ATTR_COMPL_VIO_SUM_PTR = #const_cstr GRB_DBL_ATTR_COMPL_VIO_SUM
+
+dBL_ATTR_KAPPA :: String
+dBL_ATTR_KAPPA = #const_str GRB_DBL_ATTR_KAPPA
+
+dBL_ATTR_KAPPA_PTR :: CString
+dBL_ATTR_KAPPA_PTR = #const_cstr GRB_DBL_ATTR_KAPPA
+
+dBL_ATTR_KAPPA_EXACT :: String
+dBL_ATTR_KAPPA_EXACT = #const_str GRB_DBL_ATTR_KAPPA_EXACT
+
+dBL_ATTR_KAPPA_EXACT_PTR :: CString
+dBL_ATTR_KAPPA_EXACT_PTR = #const_cstr GRB_DBL_ATTR_KAPPA_EXACT
+
+dBL_ATTR_N2KAPPA :: String
+dBL_ATTR_N2KAPPA = #const_str GRB_DBL_ATTR_N2KAPPA
+
+dBL_ATTR_N2KAPPA_PTR :: CString
+dBL_ATTR_N2KAPPA_PTR = #const_cstr GRB_DBL_ATTR_N2KAPPA
+
 -- /* LP sensitivity analysis */
--- 
--- #define GRB_DBL_ATTR_SA_OBJLOW "SAObjLow"
--- #define GRB_DBL_ATTR_SA_OBJUP  "SAObjUp"
--- #define GRB_DBL_ATTR_SA_LBLOW  "SALBLow"
--- #define GRB_DBL_ATTR_SA_LBUP   "SALBUp"
--- #define GRB_DBL_ATTR_SA_UBLOW  "SAUBLow"
--- #define GRB_DBL_ATTR_SA_UBUP   "SAUBUp"
--- #define GRB_DBL_ATTR_SA_RHSLOW "SARHSLow"
--- #define GRB_DBL_ATTR_SA_RHSUP  "SARHSUp"
--- 
+
+dBL_ATTR_SA_OBJLOW :: String
+dBL_ATTR_SA_OBJLOW = #const_str GRB_DBL_ATTR_SA_OBJLOW
+
+dBL_ATTR_SA_OBJLOW_PTR :: CString
+dBL_ATTR_SA_OBJLOW_PTR = #const_cstr GRB_DBL_ATTR_SA_OBJLOW
+
+dBL_ATTR_SA_OBJUP :: String
+dBL_ATTR_SA_OBJUP = #const_str GRB_DBL_ATTR_SA_OBJUP
+
+dBL_ATTR_SA_OBJUP_PTR :: CString
+dBL_ATTR_SA_OBJUP_PTR = #const_cstr GRB_DBL_ATTR_SA_OBJUP
+
+dBL_ATTR_SA_LBLOW :: String
+dBL_ATTR_SA_LBLOW = #const_str GRB_DBL_ATTR_SA_LBLOW
+
+dBL_ATTR_SA_LBLOW_PTR :: CString
+dBL_ATTR_SA_LBLOW_PTR = #const_cstr GRB_DBL_ATTR_SA_LBLOW
+
+dBL_ATTR_SA_LBUP :: String
+dBL_ATTR_SA_LBUP = #const_str GRB_DBL_ATTR_SA_LBUP
+
+dBL_ATTR_SA_LBUP_PTR :: CString
+dBL_ATTR_SA_LBUP_PTR = #const_cstr GRB_DBL_ATTR_SA_LBUP
+
+dBL_ATTR_SA_UBLOW :: String
+dBL_ATTR_SA_UBLOW = #const_str GRB_DBL_ATTR_SA_UBLOW
+
+dBL_ATTR_SA_UBLOW_PTR :: CString
+dBL_ATTR_SA_UBLOW_PTR = #const_cstr GRB_DBL_ATTR_SA_UBLOW
+
+dBL_ATTR_SA_UBUP :: String
+dBL_ATTR_SA_UBUP = #const_str GRB_DBL_ATTR_SA_UBUP
+
+dBL_ATTR_SA_UBUP_PTR :: CString
+dBL_ATTR_SA_UBUP_PTR = #const_cstr GRB_DBL_ATTR_SA_UBUP
+
+dBL_ATTR_SA_RHSLOW :: String
+dBL_ATTR_SA_RHSLOW = #const_str GRB_DBL_ATTR_SA_RHSLOW
+
+dBL_ATTR_SA_RHSLOW_PTR :: CString
+dBL_ATTR_SA_RHSLOW_PTR = #const_cstr GRB_DBL_ATTR_SA_RHSLOW
+
+dBL_ATTR_SA_RHSUP :: String
+dBL_ATTR_SA_RHSUP = #const_str GRB_DBL_ATTR_SA_RHSUP
+
+dBL_ATTR_SA_RHSUP_PTR :: CString
+dBL_ATTR_SA_RHSUP_PTR = #const_cstr GRB_DBL_ATTR_SA_RHSUP
+
 -- /* IIS */
--- 
--- #define GRB_INT_ATTR_IIS_MINIMAL   "IISMinimal"   /* Boolean: Is IIS Minimal? */
--- #define GRB_INT_ATTR_IIS_LB        "IISLB"        /* Boolean: Is var LB in IIS? */
--- #define GRB_INT_ATTR_IIS_UB        "IISUB"        /* Boolean: Is var UB in IIS? */
--- #define GRB_INT_ATTR_IIS_CONSTR    "IISConstr"    /* Boolean: Is constr in IIS? */
--- #define GRB_INT_ATTR_IIS_SOS       "IISSOS"       /* Boolean: Is SOS in IIS? */
--- #define GRB_INT_ATTR_IIS_QCONSTR   "IISQConstr"   /* Boolean: Is QConstr in IIS? */
--- #define GRB_INT_ATTR_IIS_GENCONSTR "IISGenConstr" /* Boolean: Is general constr in IIS? */
--- 
--- #define GRB_INT_ATTR_IIS_LBFORCE        "IISLBForce"        /* Force var LB to be (1) or to not be (0) in final IIS */
--- #define GRB_INT_ATTR_IIS_UBFORCE        "IISUBForce"        /* Force var UB to be (1) or to not be (0) in final IIS */
--- #define GRB_INT_ATTR_IIS_CONSTRFORCE    "IISConstrForce"    /* Force constr to be (1) or to not be (0) in final IIS */
--- #define GRB_INT_ATTR_IIS_SOSFORCE       "IISSOSForce"       /* Force SOS to be (1) or to not be (0) in final IIS */
--- #define GRB_INT_ATTR_IIS_QCONSTRFORCE   "IISQConstrForce"   /* Force QConstr to be (1) or to not be (0) in final IIS */
--- #define GRB_INT_ATTR_IIS_GENCONSTRFORCE "IISGenConstrForce" /* Force general constr to be (1) or to not be (0) in final IIS */
--- 
+
+-- | Boolean: Is IIS Minimal?
+iNT_ATTR_IIS_MINIMAL :: String
+iNT_ATTR_IIS_MINIMAL = #const_str GRB_INT_ATTR_IIS_MINIMAL
+
+-- | Boolean: Is IIS Minimal?
+iNT_ATTR_IIS_MINIMAL_PTR :: CString
+iNT_ATTR_IIS_MINIMAL_PTR = #const_cstr GRB_INT_ATTR_IIS_MINIMAL
+
+-- | Boolean: Is var LB in IIS?
+iNT_ATTR_IIS_LB :: String
+iNT_ATTR_IIS_LB = #const_str GRB_INT_ATTR_IIS_LB
+
+-- | Boolean: Is var LB in IIS?
+iNT_ATTR_IIS_LB_PTR :: CString
+iNT_ATTR_IIS_LB_PTR = #const_cstr GRB_INT_ATTR_IIS_LB
+
+-- | Boolean: Is var UB in IIS?
+iNT_ATTR_IIS_UB :: String
+iNT_ATTR_IIS_UB = #const_str GRB_INT_ATTR_IIS_UB
+
+-- | Boolean: Is var UB in IIS?
+iNT_ATTR_IIS_UB_PTR :: CString
+iNT_ATTR_IIS_UB_PTR = #const_cstr GRB_INT_ATTR_IIS_UB
+
+-- | Boolean: Is constr in IIS?
+iNT_ATTR_IIS_CONSTR :: String
+iNT_ATTR_IIS_CONSTR = #const_str GRB_INT_ATTR_IIS_CONSTR
+
+-- | Boolean: Is constr in IIS?
+iNT_ATTR_IIS_CONSTR_PTR :: CString
+iNT_ATTR_IIS_CONSTR_PTR = #const_cstr GRB_INT_ATTR_IIS_CONSTR
+
+-- | Boolean: Is SOS in IIS?
+iNT_ATTR_IIS_SOS :: String
+iNT_ATTR_IIS_SOS = #const_str GRB_INT_ATTR_IIS_SOS
+
+-- | Boolean: Is SOS in IIS?
+iNT_ATTR_IIS_SOS_PTR :: CString
+iNT_ATTR_IIS_SOS_PTR = #const_cstr GRB_INT_ATTR_IIS_SOS
+
+-- | Boolean: Is QConstr in IIS?
+iNT_ATTR_IIS_QCONSTR :: String
+iNT_ATTR_IIS_QCONSTR = #const_str GRB_INT_ATTR_IIS_QCONSTR
+
+-- | Boolean: Is QConstr in IIS?
+iNT_ATTR_IIS_QCONSTR_PTR :: CString
+iNT_ATTR_IIS_QCONSTR_PTR = #const_cstr GRB_INT_ATTR_IIS_QCONSTR
+
+-- | Boolean: Is general constr in IIS?
+iNT_ATTR_IIS_GENCONSTR :: String
+iNT_ATTR_IIS_GENCONSTR = #const_str GRB_INT_ATTR_IIS_GENCONSTR
+
+-- | Boolean: Is general constr in IIS?
+iNT_ATTR_IIS_GENCONSTR_PTR :: CString
+iNT_ATTR_IIS_GENCONSTR_PTR = #const_cstr GRB_INT_ATTR_IIS_GENCONSTR
+
+
+-- | Force var LB to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_LBFORCE :: String
+iNT_ATTR_IIS_LBFORCE = #const_str GRB_INT_ATTR_IIS_LBFORCE
+
+-- | Force var LB to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_LBFORCE_PTR :: CString
+iNT_ATTR_IIS_LBFORCE_PTR = #const_cstr GRB_INT_ATTR_IIS_LBFORCE
+
+-- | Force var UB to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_UBFORCE :: String
+iNT_ATTR_IIS_UBFORCE = #const_str GRB_INT_ATTR_IIS_UBFORCE
+
+-- | Force var UB to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_UBFORCE_PTR :: CString
+iNT_ATTR_IIS_UBFORCE_PTR = #const_cstr GRB_INT_ATTR_IIS_UBFORCE
+
+-- | Force constr to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_CONSTRFORCE :: String
+iNT_ATTR_IIS_CONSTRFORCE = #const_str GRB_INT_ATTR_IIS_CONSTRFORCE
+
+-- | Force constr to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_CONSTRFORCE_PTR :: CString
+iNT_ATTR_IIS_CONSTRFORCE_PTR = #const_cstr GRB_INT_ATTR_IIS_CONSTRFORCE
+
+-- | Force SOS to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_SOSFORCE :: String
+iNT_ATTR_IIS_SOSFORCE = #const_str GRB_INT_ATTR_IIS_SOSFORCE
+
+-- | Force SOS to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_SOSFORCE_PTR :: CString
+iNT_ATTR_IIS_SOSFORCE_PTR = #const_cstr GRB_INT_ATTR_IIS_SOSFORCE
+
+-- | Force QConstr to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_QCONSTRFORCE :: String
+iNT_ATTR_IIS_QCONSTRFORCE = #const_str GRB_INT_ATTR_IIS_QCONSTRFORCE
+
+-- | Force QConstr to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_QCONSTRFORCE_PTR :: CString
+iNT_ATTR_IIS_QCONSTRFORCE_PTR = #const_cstr GRB_INT_ATTR_IIS_QCONSTRFORCE
+
+-- | Force general constr to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_GENCONSTRFORCE :: String
+iNT_ATTR_IIS_GENCONSTRFORCE = #const_str GRB_INT_ATTR_IIS_GENCONSTRFORCE
+
+-- | Force general constr to be (1) or to not be (0) in final IIS
+iNT_ATTR_IIS_GENCONSTRFORCE_PTR :: CString
+iNT_ATTR_IIS_GENCONSTRFORCE_PTR = #const_cstr GRB_INT_ATTR_IIS_GENCONSTRFORCE
+
 -- /* Tuning */
--- 
--- #define GRB_INT_ATTR_TUNE_RESULTCOUNT "TuneResultCount"
--- 
+
+iNT_ATTR_TUNE_RESULTCOUNT :: String
+iNT_ATTR_TUNE_RESULTCOUNT = #const_str GRB_INT_ATTR_TUNE_RESULTCOUNT
+
+iNT_ATTR_TUNE_RESULTCOUNT_PTR :: CString
+iNT_ATTR_TUNE_RESULTCOUNT_PTR = #const_cstr GRB_INT_ATTR_TUNE_RESULTCOUNT
+
 -- /* Advanced simplex features */
--- 
--- #define GRB_DBL_ATTR_FARKASDUAL  "FarkasDual"
--- #define GRB_DBL_ATTR_FARKASPROOF "FarkasProof"
--- #define GRB_DBL_ATTR_UNBDRAY     "UnbdRay"
--- #define GRB_INT_ATTR_INFEASVAR   "InfeasVar"
--- #define GRB_INT_ATTR_UNBDVAR     "UnbdVar"
--- 
+
+dBL_ATTR_FARKASDUAL :: String
+dBL_ATTR_FARKASDUAL = #const_str GRB_DBL_ATTR_FARKASDUAL
+
+dBL_ATTR_FARKASDUAL_PTR :: CString
+dBL_ATTR_FARKASDUAL_PTR = #const_cstr GRB_DBL_ATTR_FARKASDUAL
+
+dBL_ATTR_FARKASPROOF :: String
+dBL_ATTR_FARKASPROOF = #const_str GRB_DBL_ATTR_FARKASPROOF
+
+dBL_ATTR_FARKASPROOF_PTR :: CString
+dBL_ATTR_FARKASPROOF_PTR = #const_cstr GRB_DBL_ATTR_FARKASPROOF
+
+dBL_ATTR_UNBDRAY :: String
+dBL_ATTR_UNBDRAY = #const_str GRB_DBL_ATTR_UNBDRAY
+
+dBL_ATTR_UNBDRAY_PTR :: CString
+dBL_ATTR_UNBDRAY_PTR = #const_cstr GRB_DBL_ATTR_UNBDRAY
+
+iNT_ATTR_INFEASVAR :: String
+iNT_ATTR_INFEASVAR = #const_str GRB_INT_ATTR_INFEASVAR
+
+iNT_ATTR_INFEASVAR_PTR :: CString
+iNT_ATTR_INFEASVAR_PTR = #const_cstr GRB_INT_ATTR_INFEASVAR
+
+iNT_ATTR_UNBDVAR :: String
+iNT_ATTR_UNBDVAR = #const_str GRB_INT_ATTR_UNBDVAR
+
+iNT_ATTR_UNBDVAR_PTR :: CString
+iNT_ATTR_UNBDVAR_PTR = #const_cstr GRB_INT_ATTR_UNBDVAR
+
 -- /* Presolve attribute */
--- 
--- #define GRB_INT_ATTR_VARPRESTAT "VarPreStat"
--- #define GRB_DBL_ATTR_PREFIXVAL  "PreFixVal"
--- 
+
+iNT_ATTR_VARPRESTAT :: String
+iNT_ATTR_VARPRESTAT = #const_str GRB_INT_ATTR_VARPRESTAT
+
+iNT_ATTR_VARPRESTAT_PTR :: CString
+iNT_ATTR_VARPRESTAT_PTR = #const_cstr GRB_INT_ATTR_VARPRESTAT
+
+dBL_ATTR_PREFIXVAL :: String
+dBL_ATTR_PREFIXVAL = #const_str GRB_DBL_ATTR_PREFIXVAL
+
+dBL_ATTR_PREFIXVAL_PTR :: CString
+dBL_ATTR_PREFIXVAL_PTR = #const_cstr GRB_DBL_ATTR_PREFIXVAL
+
 -- /* Multi objective attribute, controlled by parameter ObjNumber (= i)
 --  *
 --  * Note if you add an new attribute, adjust the const array
 --  * OBJNUMATTRNAMES and define OBJNUMATTRS in attrcache.c.
 --  */
--- #define GRB_DBL_ATTR_OBJN         "ObjN"         /* ith objective */
--- #define GRB_DBL_ATTR_OBJNVAL      "ObjNVal"      /* Solution objective for Multi-objectives, also depends on solutionnumber */
--- #define GRB_DBL_ATTR_OBJNCON      "ObjNCon"      /* constant term */
--- #define GRB_DBL_ATTR_OBJNWEIGHT   "ObjNWeight"   /* weight */
--- #define GRB_INT_ATTR_OBJNPRIORITY "ObjNPriority" /* priority */
--- #define GRB_DBL_ATTR_OBJNRELTOL   "ObjNRelTol"   /* relative tolerance */
--- #define GRB_DBL_ATTR_OBJNABSTOL   "ObjNAbsTol"   /* absolute tolerance */
--- #define GRB_STR_ATTR_OBJNNAME     "ObjNName"     /* name */
--- 
+
+-- | ith objective
+dBL_ATTR_OBJN :: String
+dBL_ATTR_OBJN = #const_str GRB_DBL_ATTR_OBJN
+
+-- | ith objective
+dBL_ATTR_OBJN_PTR :: CString
+dBL_ATTR_OBJN_PTR = #const_cstr GRB_DBL_ATTR_OBJN
+
+-- | Solution objective for Multi-objectives, also depends on solutionnumber
+dBL_ATTR_OBJNVAL :: String
+dBL_ATTR_OBJNVAL = #const_str GRB_DBL_ATTR_OBJNVAL
+
+-- | Solution objective for Multi-objectives, also depends on solutionnumber
+dBL_ATTR_OBJNVAL_PTR :: CString
+dBL_ATTR_OBJNVAL_PTR = #const_cstr GRB_DBL_ATTR_OBJNVAL
+
+-- | constant term
+dBL_ATTR_OBJNCON :: String
+dBL_ATTR_OBJNCON = #const_str GRB_DBL_ATTR_OBJNCON
+
+-- | constant term
+dBL_ATTR_OBJNCON_PTR :: CString
+dBL_ATTR_OBJNCON_PTR = #const_cstr GRB_DBL_ATTR_OBJNCON
+
+-- | weight
+dBL_ATTR_OBJNWEIGHT :: String
+dBL_ATTR_OBJNWEIGHT = #const_str GRB_DBL_ATTR_OBJNWEIGHT
+
+-- | weight
+dBL_ATTR_OBJNWEIGHT_PTR :: CString
+dBL_ATTR_OBJNWEIGHT_PTR = #const_cstr GRB_DBL_ATTR_OBJNWEIGHT
+
+-- | priority
+iNT_ATTR_OBJNPRIORITY :: String
+iNT_ATTR_OBJNPRIORITY = #const_str GRB_INT_ATTR_OBJNPRIORITY
+
+-- | priority
+iNT_ATTR_OBJNPRIORITY_PTR :: CString
+iNT_ATTR_OBJNPRIORITY_PTR = #const_cstr GRB_INT_ATTR_OBJNPRIORITY
+
+-- | relative tolerance
+dBL_ATTR_OBJNRELTOL :: String
+dBL_ATTR_OBJNRELTOL = #const_str GRB_DBL_ATTR_OBJNRELTOL
+
+-- | relative tolerance
+dBL_ATTR_OBJNRELTOL_PTR :: CString
+dBL_ATTR_OBJNRELTOL_PTR = #const_cstr GRB_DBL_ATTR_OBJNRELTOL
+
+-- | absolute tolerance
+dBL_ATTR_OBJNABSTOL :: String
+dBL_ATTR_OBJNABSTOL = #const_str GRB_DBL_ATTR_OBJNABSTOL
+
+-- | absolute tolerance
+dBL_ATTR_OBJNABSTOL_PTR :: CString
+dBL_ATTR_OBJNABSTOL_PTR = #const_cstr GRB_DBL_ATTR_OBJNABSTOL
+
+-- | name
+sTR_ATTR_OBJNNAME :: String
+sTR_ATTR_OBJNNAME = #const_str GRB_STR_ATTR_OBJNNAME
+
+-- | name
+sTR_ATTR_OBJNNAME_PTR :: CString
+sTR_ATTR_OBJNNAME_PTR = #const_cstr GRB_STR_ATTR_OBJNNAME
+
 -- /* Scenario attributes, controlled by parameter ScenarioNumber (= i)
 --  *
 --  * Note if you add an new attribute, adjust the const array
 --  * SCENARIONUMATTRNAMES and define SCENARIONUMATTRS in attrcache.c.
 --  */
--- 
--- #define GRB_DBL_ATTR_SCENNLB       "ScenNLB"       /* lower bound in scenario i */
--- #define GRB_DBL_ATTR_SCENNUB       "ScenNUB"       /* upper bound in scenario i */
--- #define GRB_DBL_ATTR_SCENNOBJ      "ScenNObj"      /* objective in scenario i */
--- #define GRB_DBL_ATTR_SCENNRHS      "ScenNRHS"      /* right hand side in scenario i */
--- #define GRB_STR_ATTR_SCENNNAME     "ScenNName"     /* name of scenario i */
--- #define GRB_DBL_ATTR_SCENNX        "ScenNX"        /* solution value in scenario i */
--- #define GRB_DBL_ATTR_SCENNOBJBOUND "ScenNObjBound" /* objective bound for scenario i */
--- #define GRB_DBL_ATTR_SCENNOBJVAL   "ScenNObjVal"   /* objective value for scenario i */
--- 
--- #define GRB_INT_ATTR_NUMOBJ       "NumObj"       /* number of objectives */
--- #define GRB_INT_ATTR_NUMSCENARIOS "NumScenarios" /* number of scenarios */
--- #define GRB_INT_ATTR_NUMSTART     "NumStart"     /* number of MIP starts */
--- 
--- 
+
+-- | lower bound in scenario i
+dBL_ATTR_SCENNLB :: String
+dBL_ATTR_SCENNLB = #const_str GRB_DBL_ATTR_SCENNLB
+
+-- | lower bound in scenario i
+dBL_ATTR_SCENNLB_PTR :: CString
+dBL_ATTR_SCENNLB_PTR = #const_cstr GRB_DBL_ATTR_SCENNLB
+
+-- | upper bound in scenario i
+dBL_ATTR_SCENNUB :: String
+dBL_ATTR_SCENNUB = #const_str GRB_DBL_ATTR_SCENNUB
+
+-- | upper bound in scenario i
+dBL_ATTR_SCENNUB_PTR :: CString
+dBL_ATTR_SCENNUB_PTR = #const_cstr GRB_DBL_ATTR_SCENNUB
+
+-- | objective in scenario i
+dBL_ATTR_SCENNOBJ :: String
+dBL_ATTR_SCENNOBJ = #const_str GRB_DBL_ATTR_SCENNOBJ
+
+-- | objective in scenario i
+dBL_ATTR_SCENNOBJ_PTR :: CString
+dBL_ATTR_SCENNOBJ_PTR = #const_cstr GRB_DBL_ATTR_SCENNOBJ
+
+-- | right hand side in scenario i
+dBL_ATTR_SCENNRHS :: String
+dBL_ATTR_SCENNRHS = #const_str GRB_DBL_ATTR_SCENNRHS
+
+-- | right hand side in scenario i
+dBL_ATTR_SCENNRHS_PTR :: CString
+dBL_ATTR_SCENNRHS_PTR = #const_cstr GRB_DBL_ATTR_SCENNRHS
+
+-- | name of scenario i
+sTR_ATTR_SCENNNAME :: String
+sTR_ATTR_SCENNNAME = #const_str GRB_STR_ATTR_SCENNNAME
+
+-- | name of scenario i
+sTR_ATTR_SCENNNAME_PTR :: CString
+sTR_ATTR_SCENNNAME_PTR = #const_cstr GRB_STR_ATTR_SCENNNAME
+
+-- | solution value in scenario i
+dBL_ATTR_SCENNX :: String
+dBL_ATTR_SCENNX = #const_str GRB_DBL_ATTR_SCENNX
+
+-- | solution value in scenario i
+dBL_ATTR_SCENNX_PTR :: CString
+dBL_ATTR_SCENNX_PTR = #const_cstr GRB_DBL_ATTR_SCENNX
+
+-- | objective bound for scenario i
+dBL_ATTR_SCENNOBJBOUND :: String
+dBL_ATTR_SCENNOBJBOUND = #const_str GRB_DBL_ATTR_SCENNOBJBOUND
+
+-- | objective bound for scenario i
+dBL_ATTR_SCENNOBJBOUND_PTR :: CString
+dBL_ATTR_SCENNOBJBOUND_PTR = #const_cstr GRB_DBL_ATTR_SCENNOBJBOUND
+
+-- | objective value for scenario i
+dBL_ATTR_SCENNOBJVAL :: String
+dBL_ATTR_SCENNOBJVAL = #const_str GRB_DBL_ATTR_SCENNOBJVAL
+
+-- | objective value for scenario i
+dBL_ATTR_SCENNOBJVAL_PTR :: CString
+dBL_ATTR_SCENNOBJVAL_PTR = #const_cstr GRB_DBL_ATTR_SCENNOBJVAL
+
+-- | number of objectives
+iNT_ATTR_NUMOBJ :: String
+iNT_ATTR_NUMOBJ = #const_str GRB_INT_ATTR_NUMOBJ
+
+-- | number of objectives
+iNT_ATTR_NUMOBJ_PTR :: CString
+iNT_ATTR_NUMOBJ_PTR = #const_cstr GRB_INT_ATTR_NUMOBJ
+
+-- | number of scenarios
+iNT_ATTR_NUMSCENARIOS :: String
+iNT_ATTR_NUMSCENARIOS = #const_str GRB_INT_ATTR_NUMSCENARIOS
+
+-- | number of scenarios
+iNT_ATTR_NUMSCENARIOS_PTR :: CString
+iNT_ATTR_NUMSCENARIOS_PTR = #const_cstr GRB_INT_ATTR_NUMSCENARIOS
+
+-- | number of MIP starts
+iNT_ATTR_NUMSTART :: String
+iNT_ATTR_NUMSTART = #const_str GRB_INT_ATTR_NUMSTART
+
+-- | number of MIP starts
+iNT_ATTR_NUMSTART_PTR :: CString
+iNT_ATTR_NUMSTART_PTR = #const_cstr GRB_INT_ATTR_NUMSTART
+
 -- /* Memory consumption statistics */
--- 
--- #define GRB_DBL_ATTR_MEMUSED      "MemUsed"        /* current amount of allocated memory (in GB) in master environment */
--- #define GRB_DBL_ATTR_MAXMEMUSED   "MaxMemUsed"     /* maximum amount of allocated memory (in GB) in master environment */
--- 
--- 
+
+-- | current amount of allocated memory (in GB) in master environment
+dBL_ATTR_MEMUSED :: String
+dBL_ATTR_MEMUSED = #const_str GRB_DBL_ATTR_MEMUSED
+
+-- | current amount of allocated memory (in GB) in master environment
+dBL_ATTR_MEMUSED_PTR :: CString
+dBL_ATTR_MEMUSED_PTR = #const_cstr GRB_DBL_ATTR_MEMUSED
+
+-- | maximum amount of allocated memory (in GB) in master environment
+dBL_ATTR_MAXMEMUSED :: String
+dBL_ATTR_MAXMEMUSED = #const_str GRB_DBL_ATTR_MAXMEMUSED
+
+-- | maximum amount of allocated memory (in GB) in master environment
+dBL_ATTR_MAXMEMUSED_PTR :: CString
+dBL_ATTR_MAXMEMUSED_PTR = #const_cstr GRB_DBL_ATTR_MAXMEMUSED
+
 -- /* Alternate define */
--- 
--- #define GRB_DBL_ATTR_Xn "Xn"
--- 
+
+dBL_ATTR_Xn :: String
+dBL_ATTR_Xn = #const_str GRB_DBL_ATTR_Xn
+
+dBL_ATTR_Xn_PTR :: CString
+dBL_ATTR_Xn_PTR = #const_cstr GRB_DBL_ATTR_Xn
+
 -- /* General constraints */
--- 
--- #define GRB_GENCONSTR_MAX         0
--- #define GRB_GENCONSTR_MIN         1
--- #define GRB_GENCONSTR_ABS         2
--- #define GRB_GENCONSTR_AND         3
--- #define GRB_GENCONSTR_OR          4
--- #define GRB_GENCONSTR_NORM        5
--- #define GRB_GENCONSTR_NL          6
--- #define GRB_GENCONSTR_INDICATOR   7
--- #define GRB_GENCONSTR_PWL         8
--- #define GRB_GENCONSTR_POLY        9
--- #define GRB_GENCONSTR_EXP        10
--- #define GRB_GENCONSTR_EXPA       11
--- #define GRB_GENCONSTR_LOG        12
--- #define GRB_GENCONSTR_LOGA       13
--- #define GRB_GENCONSTR_POW        14
--- #define GRB_GENCONSTR_SIN        15
--- #define GRB_GENCONSTR_COS        16
--- #define GRB_GENCONSTR_TAN        17
--- #define GRB_GENCONSTR_LOGISTIC   18
--- 
--- #define NUMGENCONSTYPES          19
--- 
+
+gENCONSTR_MAX :: CInt
+gENCONSTR_MAX = #const GRB_GENCONSTR_MAX
+
+gENCONSTR_MIN :: CInt
+gENCONSTR_MIN = #const GRB_GENCONSTR_MIN
+
+gENCONSTR_ABS :: CInt
+gENCONSTR_ABS = #const GRB_GENCONSTR_ABS
+
+gENCONSTR_AND :: CInt
+gENCONSTR_AND = #const GRB_GENCONSTR_AND
+
+gENCONSTR_OR :: CInt
+gENCONSTR_OR = #const GRB_GENCONSTR_OR
+
+gENCONSTR_NORM :: CInt
+gENCONSTR_NORM = #const GRB_GENCONSTR_NORM
+
+gENCONSTR_NL :: CInt
+gENCONSTR_NL = #const GRB_GENCONSTR_NL
+
+gENCONSTR_INDICATOR :: CInt
+gENCONSTR_INDICATOR = #const GRB_GENCONSTR_INDICATOR
+
+gENCONSTR_PWL :: CInt
+gENCONSTR_PWL = #const GRB_GENCONSTR_PWL
+
+gENCONSTR_POLY :: CInt
+gENCONSTR_POLY = #const GRB_GENCONSTR_POLY
+
+gENCONSTR_EXP :: CInt
+gENCONSTR_EXP = #const GRB_GENCONSTR_EXP
+
+gENCONSTR_EXPA :: CInt
+gENCONSTR_EXPA = #const GRB_GENCONSTR_EXPA
+
+gENCONSTR_LOG :: CInt
+gENCONSTR_LOG = #const GRB_GENCONSTR_LOG
+
+gENCONSTR_LOGA :: CInt
+gENCONSTR_LOGA = #const GRB_GENCONSTR_LOGA
+
+gENCONSTR_POW :: CInt
+gENCONSTR_POW = #const GRB_GENCONSTR_POW
+
+gENCONSTR_SIN :: CInt
+gENCONSTR_SIN = #const GRB_GENCONSTR_SIN
+
+gENCONSTR_COS :: CInt
+gENCONSTR_COS = #const GRB_GENCONSTR_COS
+
+gENCONSTR_TAN :: CInt
+gENCONSTR_TAN = #const GRB_GENCONSTR_TAN
+
+gENCONSTR_LOGISTIC :: CInt
+gENCONSTR_LOGISTIC = #const GRB_GENCONSTR_LOGISTIC
+
+nUMGENCONSTYPES :: Integral a => a
+nUMGENCONSTYPES = 19
+
 -- /* Operation codes for genconstrNL */
--- 
--- #define GRB_OPCODE_CONSTANT      0
--- #define GRB_OPCODE_VARIABLE      1
--- #define GRB_OPCODE_PLUS          2
--- #define GRB_OPCODE_MINUS         3
--- #define GRB_OPCODE_MULTIPLY      4
--- #define GRB_OPCODE_DIVIDE        5
--- #define GRB_OPCODE_UMINUS        6
--- #define GRB_OPCODE_SQUARE        7
--- #define GRB_OPCODE_SQRT          8
--- #define GRB_OPCODE_SIN           9
--- #define GRB_OPCODE_COS           10
--- #define GRB_OPCODE_TAN           11
--- #define GRB_OPCODE_POW           12
--- #define GRB_OPCODE_EXP           13
--- #define GRB_OPCODE_LOG           14
--- #define GRB_OPCODE_LOG2          15
--- #define GRB_OPCODE_LOG10         16
--- #define GRB_OPCODE_LOGISTIC      17
--- 
+
+oPCODE_CONSTANT :: CInt
+oPCODE_CONSTANT = #const GRB_OPCODE_CONSTANT
+
+oPCODE_VARIABLE :: CInt
+oPCODE_VARIABLE = #const GRB_OPCODE_VARIABLE
+
+oPCODE_PLUS :: CInt
+oPCODE_PLUS = #const GRB_OPCODE_PLUS
+
+oPCODE_MINUS :: CInt
+oPCODE_MINUS = #const GRB_OPCODE_MINUS
+
+oPCODE_MULTIPLY :: CInt
+oPCODE_MULTIPLY = #const GRB_OPCODE_MULTIPLY
+
+oPCODE_DIVIDE :: CInt
+oPCODE_DIVIDE = #const GRB_OPCODE_DIVIDE
+
+oPCODE_UMINUS :: CInt
+oPCODE_UMINUS = #const GRB_OPCODE_UMINUS
+
+oPCODE_SQUARE :: CInt
+oPCODE_SQUARE = #const GRB_OPCODE_SQUARE
+
+oPCODE_SQRT :: CInt
+oPCODE_SQRT = #const GRB_OPCODE_SQRT
+
+oPCODE_SIN :: CInt
+oPCODE_SIN = #const GRB_OPCODE_SIN
+
+oPCODE_COS :: CInt
+oPCODE_COS = #const GRB_OPCODE_COS
+
+oPCODE_TAN :: CInt
+oPCODE_TAN = #const GRB_OPCODE_TAN
+
+oPCODE_POW :: CInt
+oPCODE_POW = #const GRB_OPCODE_POW
+
+oPCODE_EXP :: CInt
+oPCODE_EXP = #const GRB_OPCODE_EXP
+
+oPCODE_LOG :: CInt
+oPCODE_LOG = #const GRB_OPCODE_LOG
+
+oPCODE_LOG2 :: CInt
+oPCODE_LOG2 = #const GRB_OPCODE_LOG2
+
+oPCODE_LOG10 :: CInt
+oPCODE_LOG10 = #const GRB_OPCODE_LOG10
+
+oPCODE_LOGISTIC :: CInt
+oPCODE_LOGISTIC = #const GRB_OPCODE_LOGISTIC
+
 -- /*
 --    CALLBACKS
 -- */
--- 
+
 -- /* For callback */
--- 
--- #define GRB_CB_POLLING   0
--- #define GRB_CB_PRESOLVE  1
--- #define GRB_CB_SIMPLEX   2
--- #define GRB_CB_MIP       3
--- #define GRB_CB_MIPSOL    4
--- #define GRB_CB_MIPNODE   5
--- #define GRB_CB_MESSAGE   6
--- #define GRB_CB_BARRIER   7
--- #define GRB_CB_MULTIOBJ  8
--- #define GRB_CB_IIS       9
--- 
+
+cB_POLLING :: CInt
+cB_POLLING = #const GRB_CB_POLLING
+
+cB_PRESOLVE :: CInt
+cB_PRESOLVE = #const GRB_CB_PRESOLVE
+
+cB_SIMPLEX :: CInt
+cB_SIMPLEX = #const GRB_CB_SIMPLEX
+
+cB_MIP :: CInt
+cB_MIP = #const GRB_CB_MIP
+
+cB_MIPSOL :: CInt
+cB_MIPSOL = #const GRB_CB_MIPSOL
+
+cB_MIPNODE :: CInt
+cB_MIPNODE = #const GRB_CB_MIPNODE
+
+cB_MESSAGE :: CInt
+cB_MESSAGE = #const GRB_CB_MESSAGE
+
+cB_BARRIER :: CInt
+cB_BARRIER = #const GRB_CB_BARRIER
+
+cB_MULTIOBJ :: CInt
+cB_MULTIOBJ = #const GRB_CB_MULTIOBJ
+
+cB_IIS :: CInt
+cB_IIS = #const GRB_CB_IIS
+
 -- /* Supported names for callback */
--- 
--- #define GRB_CB_PRE_COLDEL  1000
--- #define GRB_CB_PRE_ROWDEL  1001
--- #define GRB_CB_PRE_SENCHG  1002
--- #define GRB_CB_PRE_BNDCHG  1003
--- #define GRB_CB_PRE_COECHG  1004
--- 
--- #define GRB_CB_SPX_ITRCNT  2000
--- #define GRB_CB_SPX_OBJVAL  2001
--- #define GRB_CB_SPX_PRIMINF 2002
--- #define GRB_CB_SPX_DUALINF 2003
--- #define GRB_CB_SPX_ISPERT  2004
--- 
--- #define GRB_CB_MIP_OBJBST         3000
--- #define GRB_CB_MIP_OBJBND         3001
--- #define GRB_CB_MIP_NODCNT         3002
--- #define GRB_CB_MIP_SOLCNT         3003
--- #define GRB_CB_MIP_CUTCNT         3004
--- #define GRB_CB_MIP_NODLFT         3005
--- #define GRB_CB_MIP_ITRCNT         3006
--- #define GRB_CB_MIP_OPENSCENARIOS  3007
--- #define GRB_CB_MIP_PHASE          3008
--- 
--- #define GRB_CB_MIPSOL_SOL            4001
--- #define GRB_CB_MIPSOL_OBJ            4002
--- #define GRB_CB_MIPSOL_OBJBST         4003
--- #define GRB_CB_MIPSOL_OBJBND         4004
--- #define GRB_CB_MIPSOL_NODCNT         4005
--- #define GRB_CB_MIPSOL_SOLCNT         4006
--- #define GRB_CB_MIPSOL_OPENSCENARIOS  4007
--- #define GRB_CB_MIPSOL_PHASE          4008
--- 
--- #define GRB_CB_MIPNODE_STATUS         5001
--- #define GRB_CB_MIPNODE_REL            5002
--- #define GRB_CB_MIPNODE_OBJBST         5003
--- #define GRB_CB_MIPNODE_OBJBND         5004
--- #define GRB_CB_MIPNODE_NODCNT         5005
--- #define GRB_CB_MIPNODE_SOLCNT         5006
--- #define GRB_CB_MIPNODE_BRVAR          5007
--- #define GRB_CB_MIPNODE_OPENSCENARIOS  5008
--- #define GRB_CB_MIPNODE_PHASE          5009
--- 
--- #define GRB_CB_MSG_STRING  6001
--- #define GRB_CB_RUNTIME     6002
--- #define GRB_CB_WORK        6003
--- #define GRB_CB_MEMUSED     6004
--- #define GRB_CB_MAXMEMUSED  6005
--- 
--- #define GRB_CB_BARRIER_ITRCNT  7001
--- #define GRB_CB_BARRIER_PRIMOBJ 7002
--- #define GRB_CB_BARRIER_DUALOBJ 7003
--- #define GRB_CB_BARRIER_PRIMINF 7004
--- #define GRB_CB_BARRIER_DUALINF 7005
--- #define GRB_CB_BARRIER_COMPL   7006
--- 
--- #define GRB_CB_MULTIOBJ_OBJCNT  8001
--- #define GRB_CB_MULTIOBJ_SOLCNT  8002
--- #define GRB_CB_MULTIOBJ_SOL     8003
--- #define GRB_CB_MULTIOBJ_ITRCNT  8004
--- #define GRB_CB_MULTIOBJ_OBJBST  8005 /* if single objective is an LP we
---                                       * still do not have a "_OBJVAL", the
---                                       * user can query the _OBJBST/_OBJBND
---                                       * values instead */
--- #define GRB_CB_MULTIOBJ_OBJBND  8006
--- #define GRB_CB_MULTIOBJ_STATUS  8007
--- #define GRB_CB_MULTIOBJ_MIPGAP  8008
--- #define GRB_CB_MULTIOBJ_NODCNT  8009
--- #define GRB_CB_MULTIOBJ_NODLFT  8010
--- #define GRB_CB_MULTIOBJ_RUNTIME 8011
--- #define GRB_CB_MULTIOBJ_WORK    8012
--- /* TODO maybe we should also support, think about in MIP/LP cases if not applicable
--- #define GRB_CB_MULTIOBJ_PRIMINF 8012
--- #define GRB_CB_MULTIOBJ_DUALINF 8013
--- #define GRB_CB_MULTIOBJ_ISPERT  8014
--- */
--- 
--- #define GRB_CB_IIS_CONSTRMIN    9001
--- #define GRB_CB_IIS_CONSTRMAX    9002
--- #define GRB_CB_IIS_CONSTRGUESS  9003
--- #define GRB_CB_IIS_BOUNDMIN     9004
--- #define GRB_CB_IIS_BOUNDMAX     9005
--- #define GRB_CB_IIS_BOUNDGUESS   9006
--- 
+
+cB_PRE_COLDEL :: CInt
+cB_PRE_COLDEL = #const GRB_CB_PRE_COLDEL
+
+cB_PRE_ROWDEL :: CInt
+cB_PRE_ROWDEL = #const GRB_CB_PRE_ROWDEL
+
+cB_PRE_SENCHG :: CInt
+cB_PRE_SENCHG = #const GRB_CB_PRE_SENCHG
+
+cB_PRE_BNDCHG :: CInt
+cB_PRE_BNDCHG = #const GRB_CB_PRE_BNDCHG
+
+cB_PRE_COECHG :: CInt
+cB_PRE_COECHG = #const GRB_CB_PRE_COECHG
+
+cB_SPX_ITRCNT :: CInt
+cB_SPX_ITRCNT = #const GRB_CB_SPX_ITRCNT
+
+cB_SPX_OBJVAL :: CInt
+cB_SPX_OBJVAL = #const GRB_CB_SPX_OBJVAL
+
+cB_SPX_PRIMINF :: CInt
+cB_SPX_PRIMINF = #const GRB_CB_SPX_PRIMINF
+
+cB_SPX_DUALINF :: CInt
+cB_SPX_DUALINF = #const GRB_CB_SPX_DUALINF
+
+cB_SPX_ISPERT :: CInt
+cB_SPX_ISPERT = #const GRB_CB_SPX_ISPERT
+
+cB_MIP_OBJBST :: CInt
+cB_MIP_OBJBST = #const GRB_CB_MIP_OBJBST
+
+cB_MIP_OBJBND :: CInt
+cB_MIP_OBJBND = #const GRB_CB_MIP_OBJBND
+
+cB_MIP_NODCNT :: CInt
+cB_MIP_NODCNT = #const GRB_CB_MIP_NODCNT
+
+cB_MIP_SOLCNT :: CInt
+cB_MIP_SOLCNT = #const GRB_CB_MIP_SOLCNT
+
+cB_MIP_CUTCNT :: CInt
+cB_MIP_CUTCNT = #const GRB_CB_MIP_CUTCNT
+
+cB_MIP_NODLFT :: CInt
+cB_MIP_NODLFT = #const GRB_CB_MIP_NODLFT
+
+cB_MIP_ITRCNT :: CInt
+cB_MIP_ITRCNT = #const GRB_CB_MIP_ITRCNT
+
+-- |
+--
+-- if single objective is an LP we
+-- still do not have a "_OBJVAL", the
+-- user can query the _OBJBST/_OBJBND
+-- values instead
+cB_MULTIOBJ_OBJBST :: CInt
+cB_MULTIOBJ_OBJBST = #const GRB_CB_MULTIOBJ_OBJBST
+
+cB_MULTIOBJ_OBJBND :: CInt
+cB_MULTIOBJ_OBJBND = #const GRB_CB_MULTIOBJ_OBJBND
+
+cB_MULTIOBJ_STATUS :: CInt
+cB_MULTIOBJ_STATUS = #const GRB_CB_MULTIOBJ_STATUS
+
+cB_MULTIOBJ_MIPGAP :: CInt
+cB_MULTIOBJ_MIPGAP = #const GRB_CB_MULTIOBJ_MIPGAP
+
+cB_MULTIOBJ_NODCNT :: CInt
+cB_MULTIOBJ_NODCNT = #const GRB_CB_MULTIOBJ_NODCNT
+
+cB_MULTIOBJ_NODLFT :: CInt
+cB_MULTIOBJ_NODLFT = #const GRB_CB_MULTIOBJ_NODLFT
+
+cB_MULTIOBJ_RUNTIME :: CInt
+cB_MULTIOBJ_RUNTIME = #const GRB_CB_MULTIOBJ_RUNTIME
+
+cB_MULTIOBJ_WORK :: CInt
+cB_MULTIOBJ_WORK = #const GRB_CB_MULTIOBJ_WORK
+
+{-
+TODO maybe we should also support, think about in MIP/LP cases if not applicable
+
+cB_MULTIOBJ_PRIMINF :: CInt
+cB_MULTIOBJ_PRIMINF = #const GRB_CB_MULTIOBJ_PRIMINF
+
+cB_MULTIOBJ_DUALINF :: CInt
+cB_MULTIOBJ_DUALINF = #const GRB_CB_MULTIOBJ_DUALINF
+
+cB_MULTIOBJ_ISPERT :: CInt
+cB_MULTIOBJ_ISPERT = #const GRB_CB_MULTIOBJ_ISPERT
+-}
+
+cB_IIS_CONSTRMIN :: CInt
+cB_IIS_CONSTRMIN = #const GRB_CB_IIS_CONSTRMIN
+
+cB_IIS_CONSTRMAX :: CInt
+cB_IIS_CONSTRMAX = #const GRB_CB_IIS_CONSTRMAX
+
+cB_IIS_CONSTRGUESS :: CInt
+cB_IIS_CONSTRGUESS = #const GRB_CB_IIS_CONSTRGUESS
+
+cB_IIS_BOUNDMIN :: CInt
+cB_IIS_BOUNDMIN = #const GRB_CB_IIS_BOUNDMIN
+
+cB_IIS_BOUNDMAX :: CInt
+cB_IIS_BOUNDMAX = #const GRB_CB_IIS_BOUNDMAX
+
+cB_IIS_BOUNDGUESS :: CInt
+cB_IIS_BOUNDGUESS = #const GRB_CB_IIS_BOUNDGUESS
+
 -- /* FeasRelax method parameter values */
--- 
--- #define GRB_FEASRELAX_LINEAR      0
--- #define GRB_FEASRELAX_QUADRATIC   1
--- #define GRB_FEASRELAX_CARDINALITY 2
+
+fEASRELAX_LINEAR :: CInt
+fEASRELAX_LINEAR = #const GRB_FEASRELAX_LINEAR
+
+fEASRELAX_QUADRATIC :: CInt
+fEASRELAX_QUADRATIC = #const GRB_FEASRELAX_QUADRATIC
+
+fEASRELAX_CARDINALITY :: CInt
+fEASRELAX_CARDINALITY = #const GRB_FEASRELAX_CARDINALITY
 
 -- int __stdcall
 --   GRBgetcoeff(GRBmodel *model, int constr, int var, double *valP);
@@ -1446,7 +2752,7 @@ foreign import stdcall safe "GRBconverttofixed" converttofixed
   -> IO ErrorCode
 
 -- /* Undocumented routines */
--- 
+--
 -- int __stdcall
 --   GRBgetcbwhatinfo(void *cbdata, int what, int *typeP, int *sizeP);
 foreign import stdcall unsafe "GRBgetcbwhatinfo" getcbwhatinfo
@@ -2247,380 +3553,1448 @@ foreign import stdcall safe "GRBcomputeIIS" computeIIS
   -> IO ErrorCode
 
 -- /* simplex advanced routines */
--- 
+--
 -- typedef struct _GRBsvec
 -- {
 --   int     len; /* sparse vector length. -1: It is a dense vector. */
 --   int    *ind; /* indices array of the sparse vector */
 --   double *val; /* value array of the sparse vector */
 -- } GRBsvec;
--- 
+--
 -- int __stdcall
 --   GRBFSolve(GRBmodel *model, GRBsvec *b, GRBsvec *x);
--- 
+--
 -- int __stdcall
 --   GRBBinvColj(GRBmodel *model, int j, GRBsvec *x);
--- 
+--
 -- int __stdcall
 --   GRBBinvj(GRBmodel *model, int j, GRBsvec *x);
--- 
+--
 -- int __stdcall
 --   GRBBSolve(GRBmodel *model, GRBsvec *b, GRBsvec *x);
--- 
+--
 -- int __stdcall
 --   GRBBinvi(GRBmodel *model, int i, GRBsvec *x);
--- 
+--
 -- int __stdcall
 --   GRBBinvRowi(GRBmodel *model, int i, GRBsvec *x);
--- 
+--
 -- int __stdcall
 --   GRBgetBasisHead(GRBmodel *model, int *bhead);
--- 
+--
 -- int __stdcall
 --   GRBcbstoponemultiobj(GRBmodel *model, void *cbdata, int objnum);
--- 
+--
 -- int __stdcall
 --   GRBsingularvectors(GRBmodel *model, double *left, double *right);
 
 -- /* Model status codes */
 
--- #define GRB_LOADED          1
--- #define GRB_OPTIMAL         2
--- #define GRB_INFEASIBLE      3
--- #define GRB_INF_OR_UNBD     4
--- #define GRB_UNBOUNDED       5
--- #define GRB_CUTOFF          6
--- #define GRB_ITERATION_LIMIT 7
--- #define GRB_NODE_LIMIT      8
--- #define GRB_TIME_LIMIT      9
--- #define GRB_SOLUTION_LIMIT 10
--- #define GRB_INTERRUPTED    11
--- #define GRB_NUMERIC        12
--- #define GRB_SUBOPTIMAL     13
--- #define GRB_INPROGRESS     14
--- #define GRB_USER_OBJ_LIMIT 15
--- #define GRB_WORK_LIMIT     16
--- #define GRB_MEM_LIMIT      17
--- 
+lOADED :: CInt
+lOADED = #const GRB_LOADED
+
+oPTIMAL :: CInt
+oPTIMAL = #const GRB_OPTIMAL
+
+iNFEASIBLE :: CInt
+iNFEASIBLE = #const GRB_INFEASIBLE
+
+iNF_OR_UNBD :: CInt
+iNF_OR_UNBD = #const GRB_INF_OR_UNBD
+
+uNBOUNDED :: CInt
+uNBOUNDED = #const GRB_UNBOUNDED
+
+cUTOFF :: CInt
+cUTOFF = #const GRB_CUTOFF
+
+iTERATION_LIMIT :: CInt
+iTERATION_LIMIT = #const GRB_ITERATION_LIMIT
+
+nODE_LIMIT :: CInt
+nODE_LIMIT = #const GRB_NODE_LIMIT
+
+tIME_LIMIT :: CInt
+tIME_LIMIT = #const GRB_TIME_LIMIT
+
+sOLUTION_LIMIT :: CInt
+sOLUTION_LIMIT = #const GRB_SOLUTION_LIMIT
+
+iNTERRUPTED :: CInt
+iNTERRUPTED = #const GRB_INTERRUPTED
+
+nUMERIC :: CInt
+nUMERIC = #const GRB_NUMERIC
+
+sUBOPTIMAL :: CInt
+sUBOPTIMAL = #const GRB_SUBOPTIMAL
+
+iNPROGRESS :: CInt
+iNPROGRESS = #const GRB_INPROGRESS
+
+uSER_OBJ_LIMIT :: CInt
+uSER_OBJ_LIMIT = #const GRB_USER_OBJ_LIMIT
+
+wORK_LIMIT :: CInt
+wORK_LIMIT = #const GRB_WORK_LIMIT
+
+mEM_LIMIT :: CInt
+mEM_LIMIT = #const GRB_MEM_LIMIT
+
 -- /* Basis status info */
--- 
--- #define GRB_BASIC           0
--- #define GRB_NONBASIC_LOWER -1
--- #define GRB_NONBASIC_UPPER -2
--- #define GRB_SUPERBASIC     -3
--- 
+
+bASIC :: CInt
+bASIC = #const GRB_BASIC
+
+nONBASIC_LOWER :: CInt
+nONBASIC_LOWER = #const GRB_NONBASIC_LOWER
+
+nONBASIC_UPPER :: CInt
+nONBASIC_UPPER = #const GRB_NONBASIC_UPPER
+
+sUPERBASIC :: CInt
+sUPERBASIC = #const GRB_SUPERBASIC
+
 -- /* Undocumented routines */
--- 
+--
 -- int __stdcall
 --   GRBstrongbranch(GRBmodel *model, int num, int *cand,
 --                   double *downobjbd, double *upobjbd, int *statusP);
 -- /**************/
 -- /* Parameters */
 -- /**************/
--- 
+--
 -- /* Termination */
--- 
--- #define GRB_INT_PAR_BARITERLIMIT   "BarIterLimit"
--- #define GRB_DBL_PAR_CUTOFF         "Cutoff"
--- #define GRB_DBL_PAR_ITERATIONLIMIT "IterationLimit"
--- #define GRB_DBL_PAR_NODELIMIT      "NodeLimit"
--- #define GRB_INT_PAR_SOLUTIONLIMIT  "SolutionLimit"
--- #define GRB_DBL_PAR_TIMELIMIT      "TimeLimit"
--- #define GRB_DBL_PAR_WORKLIMIT      "WorkLimit"
--- #define GRB_DBL_PAR_MEMLIMIT       "MemLimit"
--- #define GRB_DBL_PAR_SOFTMEMLIMIT   "SoftMemLimit"
--- #define GRB_DBL_PAR_BESTOBJSTOP    "BestObjStop"
--- #define GRB_DBL_PAR_BESTBDSTOP     "BestBdStop"
--- 
+
+iNT_PAR_BARITERLIMIT :: String
+iNT_PAR_BARITERLIMIT = #const_str GRB_INT_PAR_BARITERLIMIT
+
+iNT_PAR_BARITERLIMIT_PTR :: CString
+iNT_PAR_BARITERLIMIT_PTR = #const_cstr GRB_INT_PAR_BARITERLIMIT
+
+dBL_PAR_CUTOFF :: String
+dBL_PAR_CUTOFF = #const_str GRB_DBL_PAR_CUTOFF
+
+dBL_PAR_CUTOFF_PTR :: CString
+dBL_PAR_CUTOFF_PTR = #const_cstr GRB_DBL_PAR_CUTOFF
+
+dBL_PAR_ITERATIONLIMIT :: String
+dBL_PAR_ITERATIONLIMIT = #const_str GRB_DBL_PAR_ITERATIONLIMIT
+
+dBL_PAR_ITERATIONLIMIT_PTR :: CString
+dBL_PAR_ITERATIONLIMIT_PTR = #const_cstr GRB_DBL_PAR_ITERATIONLIMIT
+
+dBL_PAR_NODELIMIT :: String
+dBL_PAR_NODELIMIT = #const_str GRB_DBL_PAR_NODELIMIT
+
+dBL_PAR_NODELIMIT_PTR :: CString
+dBL_PAR_NODELIMIT_PTR = #const_cstr GRB_DBL_PAR_NODELIMIT
+
+iNT_PAR_SOLUTIONLIMIT :: String
+iNT_PAR_SOLUTIONLIMIT = #const_str GRB_INT_PAR_SOLUTIONLIMIT
+
+iNT_PAR_SOLUTIONLIMIT_PTR :: CString
+iNT_PAR_SOLUTIONLIMIT_PTR = #const_cstr GRB_INT_PAR_SOLUTIONLIMIT
+
+dBL_PAR_TIMELIMIT :: String
+dBL_PAR_TIMELIMIT = #const_str GRB_DBL_PAR_TIMELIMIT
+
+dBL_PAR_TIMELIMIT_PTR :: CString
+dBL_PAR_TIMELIMIT_PTR = #const_cstr GRB_DBL_PAR_TIMELIMIT
+
+dBL_PAR_WORKLIMIT :: String
+dBL_PAR_WORKLIMIT = #const_str GRB_DBL_PAR_WORKLIMIT
+
+dBL_PAR_WORKLIMIT_PTR :: CString
+dBL_PAR_WORKLIMIT_PTR = #const_cstr GRB_DBL_PAR_WORKLIMIT
+
+dBL_PAR_MEMLIMIT :: String
+dBL_PAR_MEMLIMIT = #const_str GRB_DBL_PAR_MEMLIMIT
+
+dBL_PAR_MEMLIMIT_PTR :: CString
+dBL_PAR_MEMLIMIT_PTR = #const_cstr GRB_DBL_PAR_MEMLIMIT
+
+dBL_PAR_SOFTMEMLIMIT :: String
+dBL_PAR_SOFTMEMLIMIT = #const_str GRB_DBL_PAR_SOFTMEMLIMIT
+
+dBL_PAR_SOFTMEMLIMIT_PTR :: CString
+dBL_PAR_SOFTMEMLIMIT_PTR = #const_cstr GRB_DBL_PAR_SOFTMEMLIMIT
+
+dBL_PAR_BESTOBJSTOP :: String
+dBL_PAR_BESTOBJSTOP = #const_str GRB_DBL_PAR_BESTOBJSTOP
+
+dBL_PAR_BESTOBJSTOP_PTR :: CString
+dBL_PAR_BESTOBJSTOP_PTR = #const_cstr GRB_DBL_PAR_BESTOBJSTOP
+
+dBL_PAR_BESTBDSTOP :: String
+dBL_PAR_BESTBDSTOP = #const_str GRB_DBL_PAR_BESTBDSTOP
+
+dBL_PAR_BESTBDSTOP_PTR :: CString
+dBL_PAR_BESTBDSTOP_PTR = #const_cstr GRB_DBL_PAR_BESTBDSTOP
+
 -- /* Tolerances */
--- 
--- #define GRB_DBL_PAR_FEASIBILITYTOL "FeasibilityTol"
--- #define GRB_DBL_PAR_INTFEASTOL     "IntFeasTol"
--- #define GRB_DBL_PAR_MARKOWITZTOL   "MarkowitzTol"
--- #define GRB_DBL_PAR_MIPGAP         "MIPGap"
--- #define GRB_DBL_PAR_MIPGAPABS      "MIPGapAbs"
--- #define GRB_DBL_PAR_OPTIMALITYTOL  "OptimalityTol"
--- #define GRB_DBL_PAR_PSDTOL         "PSDTol"
--- 
+
+dBL_PAR_FEASIBILITYTOL :: String
+dBL_PAR_FEASIBILITYTOL = #const_str GRB_DBL_PAR_FEASIBILITYTOL
+
+dBL_PAR_FEASIBILITYTOL_PTR :: CString
+dBL_PAR_FEASIBILITYTOL_PTR = #const_cstr GRB_DBL_PAR_FEASIBILITYTOL
+
+dBL_PAR_INTFEASTOL :: String
+dBL_PAR_INTFEASTOL = #const_str GRB_DBL_PAR_INTFEASTOL
+
+dBL_PAR_INTFEASTOL_PTR :: CString
+dBL_PAR_INTFEASTOL_PTR = #const_cstr GRB_DBL_PAR_INTFEASTOL
+
+dBL_PAR_MARKOWITZTOL :: String
+dBL_PAR_MARKOWITZTOL = #const_str GRB_DBL_PAR_MARKOWITZTOL
+
+dBL_PAR_MARKOWITZTOL_PTR :: CString
+dBL_PAR_MARKOWITZTOL_PTR = #const_cstr GRB_DBL_PAR_MARKOWITZTOL
+
+dBL_PAR_MIPGAP :: String
+dBL_PAR_MIPGAP = #const_str GRB_DBL_PAR_MIPGAP
+
+dBL_PAR_MIPGAP_PTR :: CString
+dBL_PAR_MIPGAP_PTR = #const_cstr GRB_DBL_PAR_MIPGAP
+
+dBL_PAR_MIPGAPABS :: String
+dBL_PAR_MIPGAPABS = #const_str GRB_DBL_PAR_MIPGAPABS
+
+dBL_PAR_MIPGAPABS_PTR :: CString
+dBL_PAR_MIPGAPABS_PTR = #const_cstr GRB_DBL_PAR_MIPGAPABS
+
+dBL_PAR_OPTIMALITYTOL :: String
+dBL_PAR_OPTIMALITYTOL = #const_str GRB_DBL_PAR_OPTIMALITYTOL
+
+dBL_PAR_OPTIMALITYTOL_PTR :: CString
+dBL_PAR_OPTIMALITYTOL_PTR = #const_cstr GRB_DBL_PAR_OPTIMALITYTOL
+
+dBL_PAR_PSDTOL :: String
+dBL_PAR_PSDTOL = #const_str GRB_DBL_PAR_PSDTOL
+
+dBL_PAR_PSDTOL_PTR :: CString
+dBL_PAR_PSDTOL_PTR = #const_cstr GRB_DBL_PAR_PSDTOL
+
 -- /* Simplex */
--- 
--- #define GRB_INT_PAR_METHOD            "Method"
--- #define GRB_INT_PAR_CONCURRENTMETHOD  "ConcurrentMethod"
--- #define GRB_DBL_PAR_PERTURBVALUE      "PerturbValue"
--- #define GRB_DBL_PAR_OBJSCALE          "ObjScale"
--- #define GRB_INT_PAR_SCALEFLAG         "ScaleFlag"
--- #define GRB_INT_PAR_SIMPLEXPRICING    "SimplexPricing"
--- #define GRB_INT_PAR_QUAD              "Quad"
--- #define GRB_INT_PAR_NORMADJUST        "NormAdjust"
--- #define GRB_INT_PAR_SIFTING           "Sifting"
--- #define GRB_INT_PAR_SIFTMETHOD        "SiftMethod"
--- #define GRB_INT_PAR_LPWARMSTART       "LPWarmStart"
--- #define GRB_INT_PAR_NETWORKALG        "NetworkAlg"
--- 
+
+iNT_PAR_METHOD :: String
+iNT_PAR_METHOD = #const_str GRB_INT_PAR_METHOD
+
+iNT_PAR_METHOD_PTR :: CString
+iNT_PAR_METHOD_PTR = #const_cstr GRB_INT_PAR_METHOD
+
+iNT_PAR_CONCURRENTMETHOD :: String
+iNT_PAR_CONCURRENTMETHOD = #const_str GRB_INT_PAR_CONCURRENTMETHOD
+
+iNT_PAR_CONCURRENTMETHOD_PTR :: CString
+iNT_PAR_CONCURRENTMETHOD_PTR = #const_cstr GRB_INT_PAR_CONCURRENTMETHOD
+
+dBL_PAR_PERTURBVALUE :: String
+dBL_PAR_PERTURBVALUE = #const_str GRB_DBL_PAR_PERTURBVALUE
+
+dBL_PAR_PERTURBVALUE_PTR :: CString
+dBL_PAR_PERTURBVALUE_PTR = #const_cstr GRB_DBL_PAR_PERTURBVALUE
+
+dBL_PAR_OBJSCALE :: String
+dBL_PAR_OBJSCALE = #const_str GRB_DBL_PAR_OBJSCALE
+
+dBL_PAR_OBJSCALE_PTR :: CString
+dBL_PAR_OBJSCALE_PTR = #const_cstr GRB_DBL_PAR_OBJSCALE
+
+iNT_PAR_SCALEFLAG :: String
+iNT_PAR_SCALEFLAG = #const_str GRB_INT_PAR_SCALEFLAG
+
+iNT_PAR_SCALEFLAG_PTR :: CString
+iNT_PAR_SCALEFLAG_PTR = #const_cstr GRB_INT_PAR_SCALEFLAG
+
+iNT_PAR_SIMPLEXPRICING :: String
+iNT_PAR_SIMPLEXPRICING = #const_str GRB_INT_PAR_SIMPLEXPRICING
+
+iNT_PAR_SIMPLEXPRICING_PTR :: CString
+iNT_PAR_SIMPLEXPRICING_PTR = #const_cstr GRB_INT_PAR_SIMPLEXPRICING
+
+iNT_PAR_QUAD :: String
+iNT_PAR_QUAD = #const_str GRB_INT_PAR_QUAD
+
+iNT_PAR_QUAD_PTR :: CString
+iNT_PAR_QUAD_PTR = #const_cstr GRB_INT_PAR_QUAD
+
+iNT_PAR_NORMADJUST :: String
+iNT_PAR_NORMADJUST = #const_str GRB_INT_PAR_NORMADJUST
+
+iNT_PAR_NORMADJUST_PTR :: CString
+iNT_PAR_NORMADJUST_PTR = #const_cstr GRB_INT_PAR_NORMADJUST
+
+iNT_PAR_SIFTING :: String
+iNT_PAR_SIFTING = #const_str GRB_INT_PAR_SIFTING
+
+iNT_PAR_SIFTING_PTR :: CString
+iNT_PAR_SIFTING_PTR = #const_cstr GRB_INT_PAR_SIFTING
+
+iNT_PAR_SIFTMETHOD :: String
+iNT_PAR_SIFTMETHOD = #const_str GRB_INT_PAR_SIFTMETHOD
+
+iNT_PAR_SIFTMETHOD_PTR :: CString
+iNT_PAR_SIFTMETHOD_PTR = #const_cstr GRB_INT_PAR_SIFTMETHOD
+
+iNT_PAR_LPWARMSTART :: String
+iNT_PAR_LPWARMSTART = #const_str GRB_INT_PAR_LPWARMSTART
+
+iNT_PAR_LPWARMSTART_PTR :: CString
+iNT_PAR_LPWARMSTART_PTR = #const_cstr GRB_INT_PAR_LPWARMSTART
+
+iNT_PAR_NETWORKALG :: String
+iNT_PAR_NETWORKALG = #const_str GRB_INT_PAR_NETWORKALG
+
+iNT_PAR_NETWORKALG_PTR :: CString
+iNT_PAR_NETWORKALG_PTR = #const_cstr GRB_INT_PAR_NETWORKALG
+
 -- /* Barrier */
--- 
--- #define GRB_DBL_PAR_BARCONVTOL     "BarConvTol"
--- #define GRB_INT_PAR_BARCORRECTORS  "BarCorrectors"
--- #define GRB_INT_PAR_BARHOMOGENEOUS "BarHomogeneous"
--- #define GRB_INT_PAR_BARORDER       "BarOrder"
--- #define GRB_DBL_PAR_BARQCPCONVTOL  "BarQCPConvTol"
--- #define GRB_INT_PAR_CROSSOVER      "Crossover"
--- #define GRB_INT_PAR_CROSSOVERBASIS "CrossoverBasis"
--- 
+
+dBL_PAR_BARCONVTOL :: String
+dBL_PAR_BARCONVTOL = #const_str GRB_DBL_PAR_BARCONVTOL
+
+dBL_PAR_BARCONVTOL_PTR :: CString
+dBL_PAR_BARCONVTOL_PTR = #const_cstr GRB_DBL_PAR_BARCONVTOL
+
+iNT_PAR_BARCORRECTORS :: String
+iNT_PAR_BARCORRECTORS = #const_str GRB_INT_PAR_BARCORRECTORS
+
+iNT_PAR_BARCORRECTORS_PTR :: CString
+iNT_PAR_BARCORRECTORS_PTR = #const_cstr GRB_INT_PAR_BARCORRECTORS
+
+iNT_PAR_BARHOMOGENEOUS :: String
+iNT_PAR_BARHOMOGENEOUS = #const_str GRB_INT_PAR_BARHOMOGENEOUS
+
+iNT_PAR_BARHOMOGENEOUS_PTR :: CString
+iNT_PAR_BARHOMOGENEOUS_PTR = #const_cstr GRB_INT_PAR_BARHOMOGENEOUS
+
+iNT_PAR_BARORDER :: String
+iNT_PAR_BARORDER = #const_str GRB_INT_PAR_BARORDER
+
+iNT_PAR_BARORDER_PTR :: CString
+iNT_PAR_BARORDER_PTR = #const_cstr GRB_INT_PAR_BARORDER
+
+dBL_PAR_BARQCPCONVTOL :: String
+dBL_PAR_BARQCPCONVTOL = #const_str GRB_DBL_PAR_BARQCPCONVTOL
+
+dBL_PAR_BARQCPCONVTOL_PTR :: CString
+dBL_PAR_BARQCPCONVTOL_PTR = #const_cstr GRB_DBL_PAR_BARQCPCONVTOL
+
+iNT_PAR_CROSSOVER :: String
+iNT_PAR_CROSSOVER = #const_str GRB_INT_PAR_CROSSOVER
+
+iNT_PAR_CROSSOVER_PTR :: CString
+iNT_PAR_CROSSOVER_PTR = #const_cstr GRB_INT_PAR_CROSSOVER
+
+iNT_PAR_CROSSOVERBASIS :: String
+iNT_PAR_CROSSOVERBASIS = #const_str GRB_INT_PAR_CROSSOVERBASIS
+
+iNT_PAR_CROSSOVERBASIS_PTR :: CString
+iNT_PAR_CROSSOVERBASIS_PTR = #const_cstr GRB_INT_PAR_CROSSOVERBASIS
+
 -- /* MIP */
--- 
--- #define GRB_INT_PAR_BRANCHDIR          "BranchDir"
--- #define GRB_INT_PAR_DEGENMOVES         "DegenMoves"
--- #define GRB_INT_PAR_DISCONNECTED       "Disconnected"
--- #define GRB_DBL_PAR_HEURISTICS         "Heuristics"
--- #define GRB_DBL_PAR_IMPROVESTARTGAP    "ImproveStartGap"
--- #define GRB_DBL_PAR_IMPROVESTARTTIME   "ImproveStartTime"
--- #define GRB_DBL_PAR_IMPROVESTARTNODES  "ImproveStartNodes"
--- #define GRB_INT_PAR_INTEGRALITYFOCUS   "IntegralityFocus"
--- #define GRB_INT_PAR_MINRELNODES        "MinRelNodes"
--- #define GRB_INT_PAR_MIPFOCUS           "MIPFocus"
--- #define GRB_INT_PAR_NLPHEUR            "NLPHeur"
--- #define GRB_STR_PAR_NODEFILEDIR        "NodefileDir"
--- #define GRB_DBL_PAR_NODEFILESTART      "NodefileStart"
--- #define GRB_INT_PAR_NODEMETHOD         "NodeMethod"
--- #define GRB_DBL_PAR_NORELHEURTIME      "NoRelHeurTime"
--- #define GRB_DBL_PAR_NORELHEURWORK      "NoRelHeurWork"
--- #define GRB_INT_PAR_OBBT               "OBBT"
--- #define GRB_INT_PAR_PUMPPASSES         "PumpPasses"
--- #define GRB_INT_PAR_RINS               "RINS"
--- #define GRB_STR_PAR_SOLFILES           "SolFiles"
--- #define GRB_INT_PAR_STARTNODELIMIT     "StartNodeLimit"
--- #define GRB_INT_PAR_SUBMIPNODES        "SubMIPNodes"
--- #define GRB_INT_PAR_SYMMETRY           "Symmetry"
--- #define GRB_INT_PAR_VARBRANCH          "VarBranch"
--- #define GRB_INT_PAR_SOLUTIONNUMBER     "SolutionNumber"
--- #define GRB_INT_PAR_ZEROOBJNODES       "ZeroObjNodes"
--- 
+
+iNT_PAR_BRANCHDIR :: String
+iNT_PAR_BRANCHDIR = #const_str GRB_INT_PAR_BRANCHDIR
+
+iNT_PAR_BRANCHDIR_PTR :: CString
+iNT_PAR_BRANCHDIR_PTR = #const_cstr GRB_INT_PAR_BRANCHDIR
+
+iNT_PAR_DEGENMOVES :: String
+iNT_PAR_DEGENMOVES = #const_str GRB_INT_PAR_DEGENMOVES
+
+iNT_PAR_DEGENMOVES_PTR :: CString
+iNT_PAR_DEGENMOVES_PTR = #const_cstr GRB_INT_PAR_DEGENMOVES
+
+iNT_PAR_DISCONNECTED :: String
+iNT_PAR_DISCONNECTED = #const_str GRB_INT_PAR_DISCONNECTED
+
+iNT_PAR_DISCONNECTED_PTR :: CString
+iNT_PAR_DISCONNECTED_PTR = #const_cstr GRB_INT_PAR_DISCONNECTED
+
+dBL_PAR_HEURISTICS :: String
+dBL_PAR_HEURISTICS = #const_str GRB_DBL_PAR_HEURISTICS
+
+dBL_PAR_HEURISTICS_PTR :: CString
+dBL_PAR_HEURISTICS_PTR = #const_cstr GRB_DBL_PAR_HEURISTICS
+
+dBL_PAR_IMPROVESTARTGAP :: String
+dBL_PAR_IMPROVESTARTGAP = #const_str GRB_DBL_PAR_IMPROVESTARTGAP
+
+dBL_PAR_IMPROVESTARTGAP_PTR :: CString
+dBL_PAR_IMPROVESTARTGAP_PTR = #const_cstr GRB_DBL_PAR_IMPROVESTARTGAP
+
+dBL_PAR_IMPROVESTARTTIME :: String
+dBL_PAR_IMPROVESTARTTIME = #const_str GRB_DBL_PAR_IMPROVESTARTTIME
+
+dBL_PAR_IMPROVESTARTTIME_PTR :: CString
+dBL_PAR_IMPROVESTARTTIME_PTR = #const_cstr GRB_DBL_PAR_IMPROVESTARTTIME
+
+dBL_PAR_IMPROVESTARTNODES :: String
+dBL_PAR_IMPROVESTARTNODES = #const_str GRB_DBL_PAR_IMPROVESTARTNODES
+
+dBL_PAR_IMPROVESTARTNODES_PTR :: CString
+dBL_PAR_IMPROVESTARTNODES_PTR = #const_cstr GRB_DBL_PAR_IMPROVESTARTNODES
+
+iNT_PAR_INTEGRALITYFOCUS :: String
+iNT_PAR_INTEGRALITYFOCUS = #const_str GRB_INT_PAR_INTEGRALITYFOCUS
+
+iNT_PAR_INTEGRALITYFOCUS_PTR :: CString
+iNT_PAR_INTEGRALITYFOCUS_PTR = #const_cstr GRB_INT_PAR_INTEGRALITYFOCUS
+
+iNT_PAR_MINRELNODES :: String
+iNT_PAR_MINRELNODES = #const_str GRB_INT_PAR_MINRELNODES
+
+iNT_PAR_MINRELNODES_PTR :: CString
+iNT_PAR_MINRELNODES_PTR = #const_cstr GRB_INT_PAR_MINRELNODES
+
+iNT_PAR_MIPFOCUS :: String
+iNT_PAR_MIPFOCUS = #const_str GRB_INT_PAR_MIPFOCUS
+
+iNT_PAR_MIPFOCUS_PTR :: CString
+iNT_PAR_MIPFOCUS_PTR = #const_cstr GRB_INT_PAR_MIPFOCUS
+
+iNT_PAR_NLPHEUR :: String
+iNT_PAR_NLPHEUR = #const_str GRB_INT_PAR_NLPHEUR
+
+iNT_PAR_NLPHEUR_PTR :: CString
+iNT_PAR_NLPHEUR_PTR = #const_cstr GRB_INT_PAR_NLPHEUR
+
+sTR_PAR_NODEFILEDIR :: String
+sTR_PAR_NODEFILEDIR = #const_str GRB_STR_PAR_NODEFILEDIR
+
+sTR_PAR_NODEFILEDIR_PTR :: CString
+sTR_PAR_NODEFILEDIR_PTR = #const_cstr GRB_STR_PAR_NODEFILEDIR
+
+dBL_PAR_NODEFILESTART :: String
+dBL_PAR_NODEFILESTART = #const_str GRB_DBL_PAR_NODEFILESTART
+
+dBL_PAR_NODEFILESTART_PTR :: CString
+dBL_PAR_NODEFILESTART_PTR = #const_cstr GRB_DBL_PAR_NODEFILESTART
+
+iNT_PAR_NODEMETHOD :: String
+iNT_PAR_NODEMETHOD = #const_str GRB_INT_PAR_NODEMETHOD
+
+iNT_PAR_NODEMETHOD_PTR :: CString
+iNT_PAR_NODEMETHOD_PTR = #const_cstr GRB_INT_PAR_NODEMETHOD
+
+dBL_PAR_NORELHEURTIME :: String
+dBL_PAR_NORELHEURTIME = #const_str GRB_DBL_PAR_NORELHEURTIME
+
+dBL_PAR_NORELHEURTIME_PTR :: CString
+dBL_PAR_NORELHEURTIME_PTR = #const_cstr GRB_DBL_PAR_NORELHEURTIME
+
+dBL_PAR_NORELHEURWORK :: String
+dBL_PAR_NORELHEURWORK = #const_str GRB_DBL_PAR_NORELHEURWORK
+
+dBL_PAR_NORELHEURWORK_PTR :: CString
+dBL_PAR_NORELHEURWORK_PTR = #const_cstr GRB_DBL_PAR_NORELHEURWORK
+
+iNT_PAR_OBBT :: String
+iNT_PAR_OBBT = #const_str GRB_INT_PAR_OBBT
+
+iNT_PAR_OBBT_PTR :: CString
+iNT_PAR_OBBT_PTR = #const_cstr GRB_INT_PAR_OBBT
+
+iNT_PAR_PUMPPASSES :: String
+iNT_PAR_PUMPPASSES = #const_str GRB_INT_PAR_PUMPPASSES
+
+iNT_PAR_PUMPPASSES_PTR :: CString
+iNT_PAR_PUMPPASSES_PTR = #const_cstr GRB_INT_PAR_PUMPPASSES
+
+iNT_PAR_RINS :: String
+iNT_PAR_RINS = #const_str GRB_INT_PAR_RINS
+
+iNT_PAR_RINS_PTR :: CString
+iNT_PAR_RINS_PTR = #const_cstr GRB_INT_PAR_RINS
+
+sTR_PAR_SOLFILES :: String
+sTR_PAR_SOLFILES = #const_str GRB_STR_PAR_SOLFILES
+
+sTR_PAR_SOLFILES_PTR :: CString
+sTR_PAR_SOLFILES_PTR = #const_cstr GRB_STR_PAR_SOLFILES
+
+iNT_PAR_STARTNODELIMIT :: String
+iNT_PAR_STARTNODELIMIT = #const_str GRB_INT_PAR_STARTNODELIMIT
+
+iNT_PAR_STARTNODELIMIT_PTR :: CString
+iNT_PAR_STARTNODELIMIT_PTR = #const_cstr GRB_INT_PAR_STARTNODELIMIT
+
+iNT_PAR_SUBMIPNODES :: String
+iNT_PAR_SUBMIPNODES = #const_str GRB_INT_PAR_SUBMIPNODES
+
+iNT_PAR_SUBMIPNODES_PTR :: CString
+iNT_PAR_SUBMIPNODES_PTR = #const_cstr GRB_INT_PAR_SUBMIPNODES
+
+iNT_PAR_SYMMETRY :: String
+iNT_PAR_SYMMETRY = #const_str GRB_INT_PAR_SYMMETRY
+
+iNT_PAR_SYMMETRY_PTR :: CString
+iNT_PAR_SYMMETRY_PTR = #const_cstr GRB_INT_PAR_SYMMETRY
+
+iNT_PAR_VARBRANCH :: String
+iNT_PAR_VARBRANCH = #const_str GRB_INT_PAR_VARBRANCH
+
+iNT_PAR_VARBRANCH_PTR :: CString
+iNT_PAR_VARBRANCH_PTR = #const_cstr GRB_INT_PAR_VARBRANCH
+
+iNT_PAR_SOLUTIONNUMBER :: String
+iNT_PAR_SOLUTIONNUMBER = #const_str GRB_INT_PAR_SOLUTIONNUMBER
+
+iNT_PAR_SOLUTIONNUMBER_PTR :: CString
+iNT_PAR_SOLUTIONNUMBER_PTR = #const_cstr GRB_INT_PAR_SOLUTIONNUMBER
+
+iNT_PAR_ZEROOBJNODES :: String
+iNT_PAR_ZEROOBJNODES = #const_str GRB_INT_PAR_ZEROOBJNODES
+
+iNT_PAR_ZEROOBJNODES_PTR :: CString
+iNT_PAR_ZEROOBJNODES_PTR = #const_cstr GRB_INT_PAR_ZEROOBJNODES
+
 -- /* MIP cuts */
--- 
--- #define GRB_INT_PAR_CUTS            "Cuts"
--- 
--- #define GRB_INT_PAR_CLIQUECUTS      "CliqueCuts"
--- #define GRB_INT_PAR_COVERCUTS       "CoverCuts"
--- #define GRB_INT_PAR_FLOWCOVERCUTS   "FlowCoverCuts"
--- #define GRB_INT_PAR_FLOWPATHCUTS    "FlowPathCuts"
--- #define GRB_INT_PAR_GUBCOVERCUTS    "GUBCoverCuts"
--- #define GRB_INT_PAR_IMPLIEDCUTS     "ImpliedCuts"
--- #define GRB_INT_PAR_PROJIMPLIEDCUTS "ProjImpliedCuts"
--- #define GRB_INT_PAR_MIPSEPCUTS      "MIPSepCuts"
--- #define GRB_INT_PAR_MIRCUTS         "MIRCuts"
--- #define GRB_INT_PAR_STRONGCGCUTS    "StrongCGCuts"
--- #define GRB_INT_PAR_MODKCUTS        "ModKCuts"
--- #define GRB_INT_PAR_ZEROHALFCUTS    "ZeroHalfCuts"
--- #define GRB_INT_PAR_NETWORKCUTS     "NetworkCuts"
--- #define GRB_INT_PAR_SUBMIPCUTS      "SubMIPCuts"
--- #define GRB_INT_PAR_INFPROOFCUTS    "InfProofCuts"
--- #define GRB_INT_PAR_RLTCUTS         "RLTCuts"
--- #define GRB_INT_PAR_RELAXLIFTCUTS   "RelaxLiftCuts"
--- #define GRB_INT_PAR_BQPCUTS         "BQPCuts"
--- #define GRB_INT_PAR_PSDCUTS         "PSDCuts"
--- #define GRB_INT_PAR_LIFTPROJECTCUTS "LiftProjectCuts"
--- #define GRB_INT_PAR_MIXINGCUTS      "MixingCuts"
--- #define GRB_INT_PAR_DUALIMPLIEDCUTS "DualImpliedCuts"
--- 
--- #define GRB_INT_PAR_CUTAGGPASSES    "CutAggPasses"
--- #define GRB_INT_PAR_CUTPASSES       "CutPasses"
--- #define GRB_INT_PAR_GOMORYPASSES    "GomoryPasses"
--- 
+
+iNT_PAR_CUTS :: String
+iNT_PAR_CUTS = #const_str GRB_INT_PAR_CUTS
+
+iNT_PAR_CUTS_PTR :: CString
+iNT_PAR_CUTS_PTR = #const_cstr GRB_INT_PAR_CUTS
+
+iNT_PAR_CLIQUECUTS :: String
+iNT_PAR_CLIQUECUTS = #const_str GRB_INT_PAR_CLIQUECUTS
+
+iNT_PAR_CLIQUECUTS_PTR :: CString
+iNT_PAR_CLIQUECUTS_PTR = #const_cstr GRB_INT_PAR_CLIQUECUTS
+
+iNT_PAR_COVERCUTS :: String
+iNT_PAR_COVERCUTS = #const_str GRB_INT_PAR_COVERCUTS
+
+iNT_PAR_COVERCUTS_PTR :: CString
+iNT_PAR_COVERCUTS_PTR = #const_cstr GRB_INT_PAR_COVERCUTS
+
+iNT_PAR_FLOWCOVERCUTS :: String
+iNT_PAR_FLOWCOVERCUTS = #const_str GRB_INT_PAR_FLOWCOVERCUTS
+
+iNT_PAR_FLOWCOVERCUTS_PTR :: CString
+iNT_PAR_FLOWCOVERCUTS_PTR = #const_cstr GRB_INT_PAR_FLOWCOVERCUTS
+
+iNT_PAR_FLOWPATHCUTS :: String
+iNT_PAR_FLOWPATHCUTS = #const_str GRB_INT_PAR_FLOWPATHCUTS
+
+iNT_PAR_FLOWPATHCUTS_PTR :: CString
+iNT_PAR_FLOWPATHCUTS_PTR = #const_cstr GRB_INT_PAR_FLOWPATHCUTS
+
+iNT_PAR_GUBCOVERCUTS :: String
+iNT_PAR_GUBCOVERCUTS = #const_str GRB_INT_PAR_GUBCOVERCUTS
+
+iNT_PAR_GUBCOVERCUTS_PTR :: CString
+iNT_PAR_GUBCOVERCUTS_PTR = #const_cstr GRB_INT_PAR_GUBCOVERCUTS
+
+iNT_PAR_IMPLIEDCUTS :: String
+iNT_PAR_IMPLIEDCUTS = #const_str GRB_INT_PAR_IMPLIEDCUTS
+
+iNT_PAR_IMPLIEDCUTS_PTR :: CString
+iNT_PAR_IMPLIEDCUTS_PTR = #const_cstr GRB_INT_PAR_IMPLIEDCUTS
+
+iNT_PAR_PROJIMPLIEDCUTS :: String
+iNT_PAR_PROJIMPLIEDCUTS = #const_str GRB_INT_PAR_PROJIMPLIEDCUTS
+
+iNT_PAR_PROJIMPLIEDCUTS_PTR :: CString
+iNT_PAR_PROJIMPLIEDCUTS_PTR = #const_cstr GRB_INT_PAR_PROJIMPLIEDCUTS
+
+iNT_PAR_MIPSEPCUTS :: String
+iNT_PAR_MIPSEPCUTS = #const_str GRB_INT_PAR_MIPSEPCUTS
+
+iNT_PAR_MIPSEPCUTS_PTR :: CString
+iNT_PAR_MIPSEPCUTS_PTR = #const_cstr GRB_INT_PAR_MIPSEPCUTS
+
+iNT_PAR_MIRCUTS :: String
+iNT_PAR_MIRCUTS = #const_str GRB_INT_PAR_MIRCUTS
+
+iNT_PAR_MIRCUTS_PTR :: CString
+iNT_PAR_MIRCUTS_PTR = #const_cstr GRB_INT_PAR_MIRCUTS
+
+iNT_PAR_STRONGCGCUTS :: String
+iNT_PAR_STRONGCGCUTS = #const_str GRB_INT_PAR_STRONGCGCUTS
+
+iNT_PAR_STRONGCGCUTS_PTR :: CString
+iNT_PAR_STRONGCGCUTS_PTR = #const_cstr GRB_INT_PAR_STRONGCGCUTS
+
+iNT_PAR_MODKCUTS :: String
+iNT_PAR_MODKCUTS = #const_str GRB_INT_PAR_MODKCUTS
+
+iNT_PAR_MODKCUTS_PTR :: CString
+iNT_PAR_MODKCUTS_PTR = #const_cstr GRB_INT_PAR_MODKCUTS
+
+iNT_PAR_ZEROHALFCUTS :: String
+iNT_PAR_ZEROHALFCUTS = #const_str GRB_INT_PAR_ZEROHALFCUTS
+
+iNT_PAR_ZEROHALFCUTS_PTR :: CString
+iNT_PAR_ZEROHALFCUTS_PTR = #const_cstr GRB_INT_PAR_ZEROHALFCUTS
+
+iNT_PAR_NETWORKCUTS :: String
+iNT_PAR_NETWORKCUTS = #const_str GRB_INT_PAR_NETWORKCUTS
+
+iNT_PAR_NETWORKCUTS_PTR :: CString
+iNT_PAR_NETWORKCUTS_PTR = #const_cstr GRB_INT_PAR_NETWORKCUTS
+
+iNT_PAR_SUBMIPCUTS :: String
+iNT_PAR_SUBMIPCUTS = #const_str GRB_INT_PAR_SUBMIPCUTS
+
+iNT_PAR_SUBMIPCUTS_PTR :: CString
+iNT_PAR_SUBMIPCUTS_PTR = #const_cstr GRB_INT_PAR_SUBMIPCUTS
+
+iNT_PAR_INFPROOFCUTS :: String
+iNT_PAR_INFPROOFCUTS = #const_str GRB_INT_PAR_INFPROOFCUTS
+
+iNT_PAR_INFPROOFCUTS_PTR :: CString
+iNT_PAR_INFPROOFCUTS_PTR = #const_cstr GRB_INT_PAR_INFPROOFCUTS
+
+iNT_PAR_RLTCUTS :: String
+iNT_PAR_RLTCUTS = #const_str GRB_INT_PAR_RLTCUTS
+
+iNT_PAR_RLTCUTS_PTR :: CString
+iNT_PAR_RLTCUTS_PTR = #const_cstr GRB_INT_PAR_RLTCUTS
+
+iNT_PAR_RELAXLIFTCUTS :: String
+iNT_PAR_RELAXLIFTCUTS = #const_str GRB_INT_PAR_RELAXLIFTCUTS
+
+iNT_PAR_RELAXLIFTCUTS_PTR :: CString
+iNT_PAR_RELAXLIFTCUTS_PTR = #const_cstr GRB_INT_PAR_RELAXLIFTCUTS
+
+iNT_PAR_BQPCUTS :: String
+iNT_PAR_BQPCUTS = #const_str GRB_INT_PAR_BQPCUTS
+
+iNT_PAR_BQPCUTS_PTR :: CString
+iNT_PAR_BQPCUTS_PTR = #const_cstr GRB_INT_PAR_BQPCUTS
+
+iNT_PAR_PSDCUTS :: String
+iNT_PAR_PSDCUTS = #const_str GRB_INT_PAR_PSDCUTS
+
+iNT_PAR_PSDCUTS_PTR :: CString
+iNT_PAR_PSDCUTS_PTR = #const_cstr GRB_INT_PAR_PSDCUTS
+
+iNT_PAR_LIFTPROJECTCUTS :: String
+iNT_PAR_LIFTPROJECTCUTS = #const_str GRB_INT_PAR_LIFTPROJECTCUTS
+
+iNT_PAR_LIFTPROJECTCUTS_PTR :: CString
+iNT_PAR_LIFTPROJECTCUTS_PTR = #const_cstr GRB_INT_PAR_LIFTPROJECTCUTS
+
+iNT_PAR_MIXINGCUTS :: String
+iNT_PAR_MIXINGCUTS = #const_str GRB_INT_PAR_MIXINGCUTS
+
+iNT_PAR_MIXINGCUTS_PTR :: CString
+iNT_PAR_MIXINGCUTS_PTR = #const_cstr GRB_INT_PAR_MIXINGCUTS
+
+iNT_PAR_DUALIMPLIEDCUTS :: String
+iNT_PAR_DUALIMPLIEDCUTS = #const_str GRB_INT_PAR_DUALIMPLIEDCUTS
+
+iNT_PAR_DUALIMPLIEDCUTS_PTR :: CString
+iNT_PAR_DUALIMPLIEDCUTS_PTR = #const_cstr GRB_INT_PAR_DUALIMPLIEDCUTS
+
+iNT_PAR_CUTAGGPASSES :: String
+iNT_PAR_CUTAGGPASSES = #const_str GRB_INT_PAR_CUTAGGPASSES
+
+iNT_PAR_CUTAGGPASSES_PTR :: CString
+iNT_PAR_CUTAGGPASSES_PTR = #const_cstr GRB_INT_PAR_CUTAGGPASSES
+
+iNT_PAR_CUTPASSES :: String
+iNT_PAR_CUTPASSES = #const_str GRB_INT_PAR_CUTPASSES
+
+iNT_PAR_CUTPASSES_PTR :: CString
+iNT_PAR_CUTPASSES_PTR = #const_cstr GRB_INT_PAR_CUTPASSES
+
+iNT_PAR_GOMORYPASSES :: String
+iNT_PAR_GOMORYPASSES = #const_str GRB_INT_PAR_GOMORYPASSES
+
+iNT_PAR_GOMORYPASSES_PTR :: CString
+iNT_PAR_GOMORYPASSES_PTR = #const_cstr GRB_INT_PAR_GOMORYPASSES
+
 -- /* Distributed algorithms */
--- 
--- #define GRB_STR_PAR_WORKERPOOL      "WorkerPool"
--- #define GRB_STR_PAR_WORKERPASSWORD  "WorkerPassword"
--- 
--- /* Licensing and Compute Server */
--- #define GRB_STR_PAR_COMPUTESERVER     "ComputeServer"
--- #define GRB_STR_PAR_TOKENSERVER       "TokenServer"
--- #define GRB_STR_PAR_SERVERPASSWORD    "ServerPassword"
--- #define GRB_INT_PAR_SERVERTIMEOUT     "ServerTimeout"
--- #define GRB_STR_PAR_CSROUTER          "CSRouter"
--- #define GRB_STR_PAR_CSGROUP           "CSGroup"
--- #define GRB_DBL_PAR_CSQUEUETIMEOUT    "CSQueueTimeout"
--- #define GRB_INT_PAR_CSPRIORITY        "CSPriority"
--- #define GRB_INT_PAR_CSIDLETIMEOUT     "CSIdleTimeout"
--- #define GRB_INT_PAR_CSTLSINSECURE     "CSTLSInsecure"
--- #define GRB_INT_PAR_TSPORT            "TSPort"
--- #define GRB_STR_PAR_CLOUDACCESSID     "CloudAccessID"
--- #define GRB_STR_PAR_CLOUDSECRETKEY    "CloudSecretKey"
--- #define GRB_STR_PAR_CLOUDPOOL         "CloudPool"
--- #define GRB_STR_PAR_CLOUDHOST         "CloudHost"
--- #define GRB_STR_PAR_CSMANAGER         "CSManager"
--- #define GRB_STR_PAR_CSAUTHTOKEN       "CSAuthToken"
--- #define GRB_STR_PAR_CSAPIACCESSID     "CSAPIAccessID"
--- #define GRB_STR_PAR_CSAPISECRET       "CSAPISecret"
--- #define GRB_INT_PAR_CSBATCHMODE       "CSBatchMode"
--- #define GRB_STR_PAR_USERNAME          "Username"
--- #define GRB_STR_PAR_CSAPPNAME         "CSAppName"
--- #define GRB_INT_PAR_CSCLIENTLOG       "CSClientLog"
--- #define GRB_STR_PAR_WLSACCESSID       "WLSAccessID"
--- #define GRB_STR_PAR_WLSSECRET         "WLSSecret"
--- #define GRB_INT_PAR_WLSTOKENDURATION  "WLSTokenDuration"
--- #define GRB_DBL_PAR_WLSTOKENREFRESH   "WLSTokenRefresh"
--- #define GRB_STR_PAR_WLSTOKEN          "WLSToken"
--- #define GRB_INT_PAR_LICENSEID         "LicenseID"
--- #define GRB_STR_PAR_WLSPROXY          "WLSProxy"
--- #define GRB_STR_PAR_WLSCONFIG         "WLSConfig"
--- 
--- 
+
+sTR_PAR_WORKERPOOL :: String
+sTR_PAR_WORKERPOOL = #const_str GRB_STR_PAR_WORKERPOOL
+
+sTR_PAR_WORKERPOOL_PTR :: CString
+sTR_PAR_WORKERPOOL_PTR = #const_cstr GRB_STR_PAR_WORKERPOOL
+
+sTR_PAR_WORKERPASSWORD :: String
+sTR_PAR_WORKERPASSWORD = #const_str GRB_STR_PAR_WORKERPASSWORD
+
+sTR_PAR_WORKERPASSWORD_PTR :: CString
+sTR_PAR_WORKERPASSWORD_PTR = #const_cstr GRB_STR_PAR_WORKERPASSWORD
+
+sTR_PAR_COMPUTESERVER :: String
+sTR_PAR_COMPUTESERVER = #const_str GRB_STR_PAR_COMPUTESERVER
+
+sTR_PAR_COMPUTESERVER_PTR :: CString
+sTR_PAR_COMPUTESERVER_PTR = #const_cstr GRB_STR_PAR_COMPUTESERVER
+
+sTR_PAR_TOKENSERVER :: String
+sTR_PAR_TOKENSERVER = #const_str GRB_STR_PAR_TOKENSERVER
+
+sTR_PAR_TOKENSERVER_PTR :: CString
+sTR_PAR_TOKENSERVER_PTR = #const_cstr GRB_STR_PAR_TOKENSERVER
+
+sTR_PAR_SERVERPASSWORD :: String
+sTR_PAR_SERVERPASSWORD = #const_str GRB_STR_PAR_SERVERPASSWORD
+
+sTR_PAR_SERVERPASSWORD_PTR :: CString
+sTR_PAR_SERVERPASSWORD_PTR = #const_cstr GRB_STR_PAR_SERVERPASSWORD
+
+iNT_PAR_SERVERTIMEOUT :: String
+iNT_PAR_SERVERTIMEOUT = #const_str GRB_INT_PAR_SERVERTIMEOUT
+
+iNT_PAR_SERVERTIMEOUT_PTR :: CString
+iNT_PAR_SERVERTIMEOUT_PTR = #const_cstr GRB_INT_PAR_SERVERTIMEOUT
+
+sTR_PAR_CSROUTER :: String
+sTR_PAR_CSROUTER = #const_str GRB_STR_PAR_CSROUTER
+
+sTR_PAR_CSROUTER_PTR :: CString
+sTR_PAR_CSROUTER_PTR = #const_cstr GRB_STR_PAR_CSROUTER
+
+sTR_PAR_CSGROUP :: String
+sTR_PAR_CSGROUP = #const_str GRB_STR_PAR_CSGROUP
+
+sTR_PAR_CSGROUP_PTR :: CString
+sTR_PAR_CSGROUP_PTR = #const_cstr GRB_STR_PAR_CSGROUP
+
+dBL_PAR_CSQUEUETIMEOUT :: String
+dBL_PAR_CSQUEUETIMEOUT = #const_str GRB_DBL_PAR_CSQUEUETIMEOUT
+
+dBL_PAR_CSQUEUETIMEOUT_PTR :: CString
+dBL_PAR_CSQUEUETIMEOUT_PTR = #const_cstr GRB_DBL_PAR_CSQUEUETIMEOUT
+
+iNT_PAR_CSPRIORITY :: String
+iNT_PAR_CSPRIORITY = #const_str GRB_INT_PAR_CSPRIORITY
+
+iNT_PAR_CSPRIORITY_PTR :: CString
+iNT_PAR_CSPRIORITY_PTR = #const_cstr GRB_INT_PAR_CSPRIORITY
+
+iNT_PAR_CSIDLETIMEOUT :: String
+iNT_PAR_CSIDLETIMEOUT = #const_str GRB_INT_PAR_CSIDLETIMEOUT
+
+iNT_PAR_CSIDLETIMEOUT_PTR :: CString
+iNT_PAR_CSIDLETIMEOUT_PTR = #const_cstr GRB_INT_PAR_CSIDLETIMEOUT
+
+iNT_PAR_CSTLSINSECURE :: String
+iNT_PAR_CSTLSINSECURE = #const_str GRB_INT_PAR_CSTLSINSECURE
+
+iNT_PAR_CSTLSINSECURE_PTR :: CString
+iNT_PAR_CSTLSINSECURE_PTR = #const_cstr GRB_INT_PAR_CSTLSINSECURE
+
+iNT_PAR_TSPORT :: String
+iNT_PAR_TSPORT = #const_str GRB_INT_PAR_TSPORT
+
+iNT_PAR_TSPORT_PTR :: CString
+iNT_PAR_TSPORT_PTR = #const_cstr GRB_INT_PAR_TSPORT
+
+sTR_PAR_CLOUDACCESSID :: String
+sTR_PAR_CLOUDACCESSID = #const_str GRB_STR_PAR_CLOUDACCESSID
+
+sTR_PAR_CLOUDACCESSID_PTR :: CString
+sTR_PAR_CLOUDACCESSID_PTR = #const_cstr GRB_STR_PAR_CLOUDACCESSID
+
+sTR_PAR_CLOUDSECRETKEY :: String
+sTR_PAR_CLOUDSECRETKEY = #const_str GRB_STR_PAR_CLOUDSECRETKEY
+
+sTR_PAR_CLOUDSECRETKEY_PTR :: CString
+sTR_PAR_CLOUDSECRETKEY_PTR = #const_cstr GRB_STR_PAR_CLOUDSECRETKEY
+
+sTR_PAR_CLOUDPOOL :: String
+sTR_PAR_CLOUDPOOL = #const_str GRB_STR_PAR_CLOUDPOOL
+
+sTR_PAR_CLOUDPOOL_PTR :: CString
+sTR_PAR_CLOUDPOOL_PTR = #const_cstr GRB_STR_PAR_CLOUDPOOL
+
+sTR_PAR_CLOUDHOST :: String
+sTR_PAR_CLOUDHOST = #const_str GRB_STR_PAR_CLOUDHOST
+
+sTR_PAR_CLOUDHOST_PTR :: CString
+sTR_PAR_CLOUDHOST_PTR = #const_cstr GRB_STR_PAR_CLOUDHOST
+
+sTR_PAR_CSMANAGER :: String
+sTR_PAR_CSMANAGER = #const_str GRB_STR_PAR_CSMANAGER
+
+sTR_PAR_CSMANAGER_PTR :: CString
+sTR_PAR_CSMANAGER_PTR = #const_cstr GRB_STR_PAR_CSMANAGER
+
+sTR_PAR_CSAUTHTOKEN :: String
+sTR_PAR_CSAUTHTOKEN = #const_str GRB_STR_PAR_CSAUTHTOKEN
+
+sTR_PAR_CSAUTHTOKEN_PTR :: CString
+sTR_PAR_CSAUTHTOKEN_PTR = #const_cstr GRB_STR_PAR_CSAUTHTOKEN
+
+sTR_PAR_CSAPIACCESSID :: String
+sTR_PAR_CSAPIACCESSID = #const_str GRB_STR_PAR_CSAPIACCESSID
+
+sTR_PAR_CSAPIACCESSID_PTR :: CString
+sTR_PAR_CSAPIACCESSID_PTR = #const_cstr GRB_STR_PAR_CSAPIACCESSID
+
+sTR_PAR_CSAPISECRET :: String
+sTR_PAR_CSAPISECRET = #const_str GRB_STR_PAR_CSAPISECRET
+
+sTR_PAR_CSAPISECRET_PTR :: CString
+sTR_PAR_CSAPISECRET_PTR = #const_cstr GRB_STR_PAR_CSAPISECRET
+
+iNT_PAR_CSBATCHMODE :: String
+iNT_PAR_CSBATCHMODE = #const_str GRB_INT_PAR_CSBATCHMODE
+
+iNT_PAR_CSBATCHMODE_PTR :: CString
+iNT_PAR_CSBATCHMODE_PTR = #const_cstr GRB_INT_PAR_CSBATCHMODE
+
+sTR_PAR_USERNAME :: String
+sTR_PAR_USERNAME = #const_str GRB_STR_PAR_USERNAME
+
+sTR_PAR_USERNAME_PTR :: CString
+sTR_PAR_USERNAME_PTR = #const_cstr GRB_STR_PAR_USERNAME
+
+sTR_PAR_CSAPPNAME :: String
+sTR_PAR_CSAPPNAME = #const_str GRB_STR_PAR_CSAPPNAME
+
+sTR_PAR_CSAPPNAME_PTR :: CString
+sTR_PAR_CSAPPNAME_PTR = #const_cstr GRB_STR_PAR_CSAPPNAME
+
+iNT_PAR_CSCLIENTLOG :: String
+iNT_PAR_CSCLIENTLOG = #const_str GRB_INT_PAR_CSCLIENTLOG
+
+iNT_PAR_CSCLIENTLOG_PTR :: CString
+iNT_PAR_CSCLIENTLOG_PTR = #const_cstr GRB_INT_PAR_CSCLIENTLOG
+
+sTR_PAR_WLSACCESSID :: String
+sTR_PAR_WLSACCESSID = #const_str GRB_STR_PAR_WLSACCESSID
+
+sTR_PAR_WLSACCESSID_PTR :: CString
+sTR_PAR_WLSACCESSID_PTR = #const_cstr GRB_STR_PAR_WLSACCESSID
+
+sTR_PAR_WLSSECRET :: String
+sTR_PAR_WLSSECRET = #const_str GRB_STR_PAR_WLSSECRET
+
+sTR_PAR_WLSSECRET_PTR :: CString
+sTR_PAR_WLSSECRET_PTR = #const_cstr GRB_STR_PAR_WLSSECRET
+
+iNT_PAR_WLSTOKENDURATION :: String
+iNT_PAR_WLSTOKENDURATION = #const_str GRB_INT_PAR_WLSTOKENDURATION
+
+iNT_PAR_WLSTOKENDURATION_PTR :: CString
+iNT_PAR_WLSTOKENDURATION_PTR = #const_cstr GRB_INT_PAR_WLSTOKENDURATION
+
+dBL_PAR_WLSTOKENREFRESH :: String
+dBL_PAR_WLSTOKENREFRESH = #const_str GRB_DBL_PAR_WLSTOKENREFRESH
+
+dBL_PAR_WLSTOKENREFRESH_PTR :: CString
+dBL_PAR_WLSTOKENREFRESH_PTR = #const_cstr GRB_DBL_PAR_WLSTOKENREFRESH
+
+sTR_PAR_WLSTOKEN :: String
+sTR_PAR_WLSTOKEN = #const_str GRB_STR_PAR_WLSTOKEN
+
+sTR_PAR_WLSTOKEN_PTR :: CString
+sTR_PAR_WLSTOKEN_PTR = #const_cstr GRB_STR_PAR_WLSTOKEN
+
+iNT_PAR_LICENSEID :: String
+iNT_PAR_LICENSEID = #const_str GRB_INT_PAR_LICENSEID
+
+iNT_PAR_LICENSEID_PTR :: CString
+iNT_PAR_LICENSEID_PTR = #const_cstr GRB_INT_PAR_LICENSEID
+
+sTR_PAR_WLSPROXY :: String
+sTR_PAR_WLSPROXY = #const_str GRB_STR_PAR_WLSPROXY
+
+sTR_PAR_WLSPROXY_PTR :: CString
+sTR_PAR_WLSPROXY_PTR = #const_cstr GRB_STR_PAR_WLSPROXY
+
+sTR_PAR_WLSCONFIG :: String
+sTR_PAR_WLSCONFIG = #const_str GRB_STR_PAR_WLSCONFIG
+
+sTR_PAR_WLSCONFIG_PTR :: CString
+sTR_PAR_WLSCONFIG_PTR = #const_cstr GRB_STR_PAR_WLSCONFIG
+
 -- /* Other */
--- 
--- #define GRB_INT_PAR_AGGREGATE         "Aggregate"
--- #define GRB_INT_PAR_AGGFILL           "AggFill"
--- #define GRB_INT_PAR_CONCURRENTMIP     "ConcurrentMIP"
--- #define GRB_INT_PAR_CONCURRENTJOBS    "ConcurrentJobs"
--- #define GRB_INT_PAR_DISPLAYINTERVAL   "DisplayInterval"
--- #define GRB_INT_PAR_DISTRIBUTEDMIPJOBS "DistributedMIPJobs"
--- #define GRB_INT_PAR_DUALREDUCTIONS    "DualReductions"
--- #define GRB_DBL_PAR_FEASRELAXBIGM     "FeasRelaxBigM"
--- #define GRB_INT_PAR_IISMETHOD         "IISMethod"
--- #define GRB_INT_PAR_INFUNBDINFO       "InfUnbdInfo"
--- #define GRB_INT_PAR_JSONSOLDETAIL     "JSONSolDetail"
--- #define GRB_INT_PAR_LAZYCONSTRAINTS   "LazyConstraints"
--- #define GRB_STR_PAR_LOGFILE           "LogFile"
--- #define GRB_INT_PAR_LOGTOCONSOLE      "LogToConsole"
--- #define GRB_INT_PAR_MIQCPMETHOD       "MIQCPMethod"
--- #define GRB_INT_PAR_NONCONVEX         "NonConvex"
--- #define GRB_INT_PAR_NUMERICFOCUS      "NumericFocus"
--- #define GRB_INT_PAR_OUTPUTFLAG        "OutputFlag"
--- #define GRB_INT_PAR_PRECRUSH          "PreCrush"
--- #define GRB_INT_PAR_PREDEPROW         "PreDepRow"
--- #define GRB_INT_PAR_PREDUAL           "PreDual"
--- #define GRB_INT_PAR_PREPASSES         "PrePasses"
--- #define GRB_INT_PAR_PREQLINEARIZE     "PreQLinearize"
--- #define GRB_INT_PAR_PRESOLVE          "Presolve"
--- #define GRB_DBL_PAR_PRESOS1BIGM       "PreSOS1BigM"
--- #define GRB_DBL_PAR_PRESOS2BIGM       "PreSOS2BigM"
--- #define GRB_INT_PAR_PRESOS1ENCODING   "PreSOS1Encoding"
--- #define GRB_INT_PAR_PRESOS2ENCODING   "PreSOS2Encoding"
--- #define GRB_INT_PAR_PRESPARSIFY       "PreSparsify"
--- #define GRB_INT_PAR_PREMIQCPFORM      "PreMIQCPForm"
--- #define GRB_INT_PAR_QCPDUAL           "QCPDual"
--- #define GRB_INT_PAR_RECORD            "Record"
--- #define GRB_STR_PAR_RESULTFILE        "ResultFile"
--- #define GRB_INT_PAR_SEED              "Seed"
--- #define GRB_INT_PAR_SOLUTIONTARGET    "SolutionTarget"
--- #define GRB_INT_PAR_THREADS           "Threads"
--- #define GRB_INT_PAR_THREADLIMIT       "ThreadLimit"
--- #define GRB_DBL_PAR_TUNETIMELIMIT     "TuneTimeLimit"
--- #define GRB_INT_PAR_TUNERESULTS       "TuneResults"
--- #define GRB_INT_PAR_TUNECRITERION     "TuneCriterion"
--- #define GRB_INT_PAR_TUNETRIALS        "TuneTrials"
--- #define GRB_INT_PAR_TUNEOUTPUT        "TuneOutput"
--- #define GRB_INT_PAR_TUNEJOBS          "TuneJobs"
--- #define GRB_DBL_PAR_TUNECLEANUP       "TuneCleanup"
--- #define GRB_DBL_PAR_TUNETARGETMIPGAP  "TuneTargetMIPGap"
--- #define GRB_DBL_PAR_TUNETARGETTIME    "TuneTargetTime"
--- #define GRB_INT_PAR_TUNEMETRIC        "TuneMetric"
--- #define GRB_INT_PAR_TUNEDYNAMICJOBS   "TuneDynamicJobs"
--- #define GRB_INT_PAR_UPDATEMODE        "UpdateMode"
--- #define GRB_INT_PAR_OBJNUMBER         "ObjNumber"
--- #define GRB_INT_PAR_MULTIOBJMETHOD    "MultiObjMethod"
--- #define GRB_INT_PAR_MULTIOBJPRE       "MultiObjPre"
--- #define GRB_INT_PAR_SCENARIONUMBER    "ScenarioNumber"
--- #define GRB_INT_PAR_POOLSOLUTIONS     "PoolSolutions"
--- #define GRB_DBL_PAR_POOLGAP           "PoolGap"
--- #define GRB_DBL_PAR_POOLGAPABS        "PoolGapAbs"
--- #define GRB_INT_PAR_POOLSEARCHMODE    "PoolSearchMode"
--- #define GRB_INT_PAR_IGNORENAMES       "IgnoreNames"
--- #define GRB_INT_PAR_STARTNUMBER       "StartNumber"
--- #define GRB_INT_PAR_PARTITIONPLACE    "PartitionPlace"
--- #define GRB_INT_PAR_FUNCPIECES        "FuncPieces"
--- #define GRB_DBL_PAR_FUNCPIECELENGTH   "FuncPieceLength"
--- #define GRB_DBL_PAR_FUNCPIECEERROR    "FuncPieceError"
--- #define GRB_DBL_PAR_FUNCPIECERATIO    "FuncPieceRatio"
--- #define GRB_DBL_PAR_FUNCMAXVAL        "FuncMaxVal"
--- #define GRB_INT_PAR_FUNCNONLINEAR     "FuncNonlinear"
--- #define GRB_STR_PAR_DUMMY             "Dummy"
--- #define GRB_STR_PAR_JOBID             "JobID"
--- 
--- 
+
+iNT_PAR_AGGREGATE :: String
+iNT_PAR_AGGREGATE = #const_str GRB_INT_PAR_AGGREGATE
+
+iNT_PAR_AGGREGATE_PTR :: CString
+iNT_PAR_AGGREGATE_PTR = #const_cstr GRB_INT_PAR_AGGREGATE
+
+iNT_PAR_AGGFILL :: String
+iNT_PAR_AGGFILL = #const_str GRB_INT_PAR_AGGFILL
+
+iNT_PAR_AGGFILL_PTR :: CString
+iNT_PAR_AGGFILL_PTR = #const_cstr GRB_INT_PAR_AGGFILL
+
+iNT_PAR_CONCURRENTMIP :: String
+iNT_PAR_CONCURRENTMIP = #const_str GRB_INT_PAR_CONCURRENTMIP
+
+iNT_PAR_CONCURRENTMIP_PTR :: CString
+iNT_PAR_CONCURRENTMIP_PTR = #const_cstr GRB_INT_PAR_CONCURRENTMIP
+
+iNT_PAR_CONCURRENTJOBS :: String
+iNT_PAR_CONCURRENTJOBS = #const_str GRB_INT_PAR_CONCURRENTJOBS
+
+iNT_PAR_CONCURRENTJOBS_PTR :: CString
+iNT_PAR_CONCURRENTJOBS_PTR = #const_cstr GRB_INT_PAR_CONCURRENTJOBS
+
+iNT_PAR_DISPLAYINTERVAL :: String
+iNT_PAR_DISPLAYINTERVAL = #const_str GRB_INT_PAR_DISPLAYINTERVAL
+
+iNT_PAR_DISPLAYINTERVAL_PTR :: CString
+iNT_PAR_DISPLAYINTERVAL_PTR = #const_cstr GRB_INT_PAR_DISPLAYINTERVAL
+
+iNT_PAR_DISTRIBUTEDMIPJOBS :: String
+iNT_PAR_DISTRIBUTEDMIPJOBS = #const_str GRB_INT_PAR_DISTRIBUTEDMIPJOBS
+
+iNT_PAR_DISTRIBUTEDMIPJOBS_PTR :: CString
+iNT_PAR_DISTRIBUTEDMIPJOBS_PTR = #const_cstr GRB_INT_PAR_DISTRIBUTEDMIPJOBS
+
+iNT_PAR_DUALREDUCTIONS :: String
+iNT_PAR_DUALREDUCTIONS = #const_str GRB_INT_PAR_DUALREDUCTIONS
+
+iNT_PAR_DUALREDUCTIONS_PTR :: CString
+iNT_PAR_DUALREDUCTIONS_PTR = #const_cstr GRB_INT_PAR_DUALREDUCTIONS
+
+dBL_PAR_FEASRELAXBIGM :: String
+dBL_PAR_FEASRELAXBIGM = #const_str GRB_DBL_PAR_FEASRELAXBIGM
+
+dBL_PAR_FEASRELAXBIGM_PTR :: CString
+dBL_PAR_FEASRELAXBIGM_PTR = #const_cstr GRB_DBL_PAR_FEASRELAXBIGM
+
+iNT_PAR_IISMETHOD :: String
+iNT_PAR_IISMETHOD = #const_str GRB_INT_PAR_IISMETHOD
+
+iNT_PAR_IISMETHOD_PTR :: CString
+iNT_PAR_IISMETHOD_PTR = #const_cstr GRB_INT_PAR_IISMETHOD
+
+iNT_PAR_INFUNBDINFO :: String
+iNT_PAR_INFUNBDINFO = #const_str GRB_INT_PAR_INFUNBDINFO
+
+iNT_PAR_INFUNBDINFO_PTR :: CString
+iNT_PAR_INFUNBDINFO_PTR = #const_cstr GRB_INT_PAR_INFUNBDINFO
+
+iNT_PAR_JSONSOLDETAIL :: String
+iNT_PAR_JSONSOLDETAIL = #const_str GRB_INT_PAR_JSONSOLDETAIL
+
+iNT_PAR_JSONSOLDETAIL_PTR :: CString
+iNT_PAR_JSONSOLDETAIL_PTR = #const_cstr GRB_INT_PAR_JSONSOLDETAIL
+
+iNT_PAR_LAZYCONSTRAINTS :: String
+iNT_PAR_LAZYCONSTRAINTS = #const_str GRB_INT_PAR_LAZYCONSTRAINTS
+
+iNT_PAR_LAZYCONSTRAINTS_PTR :: CString
+iNT_PAR_LAZYCONSTRAINTS_PTR = #const_cstr GRB_INT_PAR_LAZYCONSTRAINTS
+
+sTR_PAR_LOGFILE :: String
+sTR_PAR_LOGFILE = #const_str GRB_STR_PAR_LOGFILE
+
+sTR_PAR_LOGFILE_PTR :: CString
+sTR_PAR_LOGFILE_PTR = #const_cstr GRB_STR_PAR_LOGFILE
+
+iNT_PAR_LOGTOCONSOLE :: String
+iNT_PAR_LOGTOCONSOLE = #const_str GRB_INT_PAR_LOGTOCONSOLE
+
+iNT_PAR_LOGTOCONSOLE_PTR :: CString
+iNT_PAR_LOGTOCONSOLE_PTR = #const_cstr GRB_INT_PAR_LOGTOCONSOLE
+
+iNT_PAR_MIQCPMETHOD :: String
+iNT_PAR_MIQCPMETHOD = #const_str GRB_INT_PAR_MIQCPMETHOD
+
+iNT_PAR_MIQCPMETHOD_PTR :: CString
+iNT_PAR_MIQCPMETHOD_PTR = #const_cstr GRB_INT_PAR_MIQCPMETHOD
+
+iNT_PAR_NONCONVEX :: String
+iNT_PAR_NONCONVEX = #const_str GRB_INT_PAR_NONCONVEX
+
+iNT_PAR_NONCONVEX_PTR :: CString
+iNT_PAR_NONCONVEX_PTR = #const_cstr GRB_INT_PAR_NONCONVEX
+
+iNT_PAR_NUMERICFOCUS :: String
+iNT_PAR_NUMERICFOCUS = #const_str GRB_INT_PAR_NUMERICFOCUS
+
+iNT_PAR_NUMERICFOCUS_PTR :: CString
+iNT_PAR_NUMERICFOCUS_PTR = #const_cstr GRB_INT_PAR_NUMERICFOCUS
+
+iNT_PAR_OUTPUTFLAG :: String
+iNT_PAR_OUTPUTFLAG = #const_str GRB_INT_PAR_OUTPUTFLAG
+
+iNT_PAR_OUTPUTFLAG_PTR :: CString
+iNT_PAR_OUTPUTFLAG_PTR = #const_cstr GRB_INT_PAR_OUTPUTFLAG
+
+iNT_PAR_PRECRUSH :: String
+iNT_PAR_PRECRUSH = #const_str GRB_INT_PAR_PRECRUSH
+
+iNT_PAR_PRECRUSH_PTR :: CString
+iNT_PAR_PRECRUSH_PTR = #const_cstr GRB_INT_PAR_PRECRUSH
+
+iNT_PAR_PREDEPROW :: String
+iNT_PAR_PREDEPROW = #const_str GRB_INT_PAR_PREDEPROW
+
+iNT_PAR_PREDEPROW_PTR :: CString
+iNT_PAR_PREDEPROW_PTR = #const_cstr GRB_INT_PAR_PREDEPROW
+
+iNT_PAR_PREDUAL :: String
+iNT_PAR_PREDUAL = #const_str GRB_INT_PAR_PREDUAL
+
+iNT_PAR_PREDUAL_PTR :: CString
+iNT_PAR_PREDUAL_PTR = #const_cstr GRB_INT_PAR_PREDUAL
+
+iNT_PAR_PREPASSES :: String
+iNT_PAR_PREPASSES = #const_str GRB_INT_PAR_PREPASSES
+
+iNT_PAR_PREPASSES_PTR :: CString
+iNT_PAR_PREPASSES_PTR = #const_cstr GRB_INT_PAR_PREPASSES
+
+iNT_PAR_PREQLINEARIZE :: String
+iNT_PAR_PREQLINEARIZE = #const_str GRB_INT_PAR_PREQLINEARIZE
+
+iNT_PAR_PREQLINEARIZE_PTR :: CString
+iNT_PAR_PREQLINEARIZE_PTR = #const_cstr GRB_INT_PAR_PREQLINEARIZE
+
+iNT_PAR_PRESOLVE :: String
+iNT_PAR_PRESOLVE = #const_str GRB_INT_PAR_PRESOLVE
+
+iNT_PAR_PRESOLVE_PTR :: CString
+iNT_PAR_PRESOLVE_PTR = #const_cstr GRB_INT_PAR_PRESOLVE
+
+dBL_PAR_PRESOS1BIGM :: String
+dBL_PAR_PRESOS1BIGM = #const_str GRB_DBL_PAR_PRESOS1BIGM
+
+dBL_PAR_PRESOS1BIGM_PTR :: CString
+dBL_PAR_PRESOS1BIGM_PTR = #const_cstr GRB_DBL_PAR_PRESOS1BIGM
+
+dBL_PAR_PRESOS2BIGM :: String
+dBL_PAR_PRESOS2BIGM = #const_str GRB_DBL_PAR_PRESOS2BIGM
+
+dBL_PAR_PRESOS2BIGM_PTR :: CString
+dBL_PAR_PRESOS2BIGM_PTR = #const_cstr GRB_DBL_PAR_PRESOS2BIGM
+
+iNT_PAR_PRESOS1ENCODING :: String
+iNT_PAR_PRESOS1ENCODING = #const_str GRB_INT_PAR_PRESOS1ENCODING
+
+iNT_PAR_PRESOS1ENCODING_PTR :: CString
+iNT_PAR_PRESOS1ENCODING_PTR = #const_cstr GRB_INT_PAR_PRESOS1ENCODING
+
+iNT_PAR_PRESOS2ENCODING :: String
+iNT_PAR_PRESOS2ENCODING = #const_str GRB_INT_PAR_PRESOS2ENCODING
+
+iNT_PAR_PRESOS2ENCODING_PTR :: CString
+iNT_PAR_PRESOS2ENCODING_PTR = #const_cstr GRB_INT_PAR_PRESOS2ENCODING
+
+iNT_PAR_PRESPARSIFY :: String
+iNT_PAR_PRESPARSIFY = #const_str GRB_INT_PAR_PRESPARSIFY
+
+iNT_PAR_PRESPARSIFY_PTR :: CString
+iNT_PAR_PRESPARSIFY_PTR = #const_cstr GRB_INT_PAR_PRESPARSIFY
+
+iNT_PAR_PREMIQCPFORM :: String
+iNT_PAR_PREMIQCPFORM = #const_str GRB_INT_PAR_PREMIQCPFORM
+
+iNT_PAR_PREMIQCPFORM_PTR :: CString
+iNT_PAR_PREMIQCPFORM_PTR = #const_cstr GRB_INT_PAR_PREMIQCPFORM
+
+iNT_PAR_QCPDUAL :: String
+iNT_PAR_QCPDUAL = #const_str GRB_INT_PAR_QCPDUAL
+
+iNT_PAR_QCPDUAL_PTR :: CString
+iNT_PAR_QCPDUAL_PTR = #const_cstr GRB_INT_PAR_QCPDUAL
+
+iNT_PAR_RECORD :: String
+iNT_PAR_RECORD = #const_str GRB_INT_PAR_RECORD
+
+iNT_PAR_RECORD_PTR :: CString
+iNT_PAR_RECORD_PTR = #const_cstr GRB_INT_PAR_RECORD
+
+sTR_PAR_RESULTFILE :: String
+sTR_PAR_RESULTFILE = #const_str GRB_STR_PAR_RESULTFILE
+
+sTR_PAR_RESULTFILE_PTR :: CString
+sTR_PAR_RESULTFILE_PTR = #const_cstr GRB_STR_PAR_RESULTFILE
+
+iNT_PAR_SEED :: String
+iNT_PAR_SEED = #const_str GRB_INT_PAR_SEED
+
+iNT_PAR_SEED_PTR :: CString
+iNT_PAR_SEED_PTR = #const_cstr GRB_INT_PAR_SEED
+
+iNT_PAR_SOLUTIONTARGET :: String
+iNT_PAR_SOLUTIONTARGET = #const_str GRB_INT_PAR_SOLUTIONTARGET
+
+iNT_PAR_SOLUTIONTARGET_PTR :: CString
+iNT_PAR_SOLUTIONTARGET_PTR = #const_cstr GRB_INT_PAR_SOLUTIONTARGET
+
+iNT_PAR_THREADS :: String
+iNT_PAR_THREADS = #const_str GRB_INT_PAR_THREADS
+
+iNT_PAR_THREADS_PTR :: CString
+iNT_PAR_THREADS_PTR = #const_cstr GRB_INT_PAR_THREADS
+
+iNT_PAR_THREADLIMIT :: String
+iNT_PAR_THREADLIMIT = #const_str GRB_INT_PAR_THREADLIMIT
+
+iNT_PAR_THREADLIMIT_PTR :: CString
+iNT_PAR_THREADLIMIT_PTR = #const_cstr GRB_INT_PAR_THREADLIMIT
+
+dBL_PAR_TUNETIMELIMIT :: String
+dBL_PAR_TUNETIMELIMIT = #const_str GRB_DBL_PAR_TUNETIMELIMIT
+
+dBL_PAR_TUNETIMELIMIT_PTR :: CString
+dBL_PAR_TUNETIMELIMIT_PTR = #const_cstr GRB_DBL_PAR_TUNETIMELIMIT
+
+iNT_PAR_TUNERESULTS :: String
+iNT_PAR_TUNERESULTS = #const_str GRB_INT_PAR_TUNERESULTS
+
+iNT_PAR_TUNERESULTS_PTR :: CString
+iNT_PAR_TUNERESULTS_PTR = #const_cstr GRB_INT_PAR_TUNERESULTS
+
+iNT_PAR_TUNECRITERION :: String
+iNT_PAR_TUNECRITERION = #const_str GRB_INT_PAR_TUNECRITERION
+
+iNT_PAR_TUNECRITERION_PTR :: CString
+iNT_PAR_TUNECRITERION_PTR = #const_cstr GRB_INT_PAR_TUNECRITERION
+
+iNT_PAR_TUNETRIALS :: String
+iNT_PAR_TUNETRIALS = #const_str GRB_INT_PAR_TUNETRIALS
+
+iNT_PAR_TUNETRIALS_PTR :: CString
+iNT_PAR_TUNETRIALS_PTR = #const_cstr GRB_INT_PAR_TUNETRIALS
+
+iNT_PAR_TUNEOUTPUT :: String
+iNT_PAR_TUNEOUTPUT = #const_str GRB_INT_PAR_TUNEOUTPUT
+
+iNT_PAR_TUNEOUTPUT_PTR :: CString
+iNT_PAR_TUNEOUTPUT_PTR = #const_cstr GRB_INT_PAR_TUNEOUTPUT
+
+iNT_PAR_TUNEJOBS :: String
+iNT_PAR_TUNEJOBS = #const_str GRB_INT_PAR_TUNEJOBS
+
+iNT_PAR_TUNEJOBS_PTR :: CString
+iNT_PAR_TUNEJOBS_PTR = #const_cstr GRB_INT_PAR_TUNEJOBS
+
+dBL_PAR_TUNECLEANUP :: String
+dBL_PAR_TUNECLEANUP = #const_str GRB_DBL_PAR_TUNECLEANUP
+
+dBL_PAR_TUNECLEANUP_PTR :: CString
+dBL_PAR_TUNECLEANUP_PTR = #const_cstr GRB_DBL_PAR_TUNECLEANUP
+
+dBL_PAR_TUNETARGETMIPGAP :: String
+dBL_PAR_TUNETARGETMIPGAP = #const_str GRB_DBL_PAR_TUNETARGETMIPGAP
+
+dBL_PAR_TUNETARGETMIPGAP_PTR :: CString
+dBL_PAR_TUNETARGETMIPGAP_PTR = #const_cstr GRB_DBL_PAR_TUNETARGETMIPGAP
+
+dBL_PAR_TUNETARGETTIME :: String
+dBL_PAR_TUNETARGETTIME = #const_str GRB_DBL_PAR_TUNETARGETTIME
+
+dBL_PAR_TUNETARGETTIME_PTR :: CString
+dBL_PAR_TUNETARGETTIME_PTR = #const_cstr GRB_DBL_PAR_TUNETARGETTIME
+
+iNT_PAR_TUNEMETRIC :: String
+iNT_PAR_TUNEMETRIC = #const_str GRB_INT_PAR_TUNEMETRIC
+
+iNT_PAR_TUNEMETRIC_PTR :: CString
+iNT_PAR_TUNEMETRIC_PTR = #const_cstr GRB_INT_PAR_TUNEMETRIC
+
+iNT_PAR_TUNEDYNAMICJOBS :: String
+iNT_PAR_TUNEDYNAMICJOBS = #const_str GRB_INT_PAR_TUNEDYNAMICJOBS
+
+iNT_PAR_TUNEDYNAMICJOBS_PTR :: CString
+iNT_PAR_TUNEDYNAMICJOBS_PTR = #const_cstr GRB_INT_PAR_TUNEDYNAMICJOBS
+
+iNT_PAR_UPDATEMODE :: String
+iNT_PAR_UPDATEMODE = #const_str GRB_INT_PAR_UPDATEMODE
+
+iNT_PAR_UPDATEMODE_PTR :: CString
+iNT_PAR_UPDATEMODE_PTR = #const_cstr GRB_INT_PAR_UPDATEMODE
+
+iNT_PAR_OBJNUMBER :: String
+iNT_PAR_OBJNUMBER = #const_str GRB_INT_PAR_OBJNUMBER
+
+iNT_PAR_OBJNUMBER_PTR :: CString
+iNT_PAR_OBJNUMBER_PTR = #const_cstr GRB_INT_PAR_OBJNUMBER
+
+iNT_PAR_MULTIOBJMETHOD :: String
+iNT_PAR_MULTIOBJMETHOD = #const_str GRB_INT_PAR_MULTIOBJMETHOD
+
+iNT_PAR_MULTIOBJMETHOD_PTR :: CString
+iNT_PAR_MULTIOBJMETHOD_PTR = #const_cstr GRB_INT_PAR_MULTIOBJMETHOD
+
+iNT_PAR_MULTIOBJPRE :: String
+iNT_PAR_MULTIOBJPRE = #const_str GRB_INT_PAR_MULTIOBJPRE
+
+iNT_PAR_MULTIOBJPRE_PTR :: CString
+iNT_PAR_MULTIOBJPRE_PTR = #const_cstr GRB_INT_PAR_MULTIOBJPRE
+
+iNT_PAR_SCENARIONUMBER :: String
+iNT_PAR_SCENARIONUMBER = #const_str GRB_INT_PAR_SCENARIONUMBER
+
+iNT_PAR_SCENARIONUMBER_PTR :: CString
+iNT_PAR_SCENARIONUMBER_PTR = #const_cstr GRB_INT_PAR_SCENARIONUMBER
+
+iNT_PAR_POOLSOLUTIONS :: String
+iNT_PAR_POOLSOLUTIONS = #const_str GRB_INT_PAR_POOLSOLUTIONS
+
+iNT_PAR_POOLSOLUTIONS_PTR :: CString
+iNT_PAR_POOLSOLUTIONS_PTR = #const_cstr GRB_INT_PAR_POOLSOLUTIONS
+
+dBL_PAR_POOLGAP :: String
+dBL_PAR_POOLGAP = #const_str GRB_DBL_PAR_POOLGAP
+
+dBL_PAR_POOLGAP_PTR :: CString
+dBL_PAR_POOLGAP_PTR = #const_cstr GRB_DBL_PAR_POOLGAP
+
+dBL_PAR_POOLGAPABS :: String
+dBL_PAR_POOLGAPABS = #const_str GRB_DBL_PAR_POOLGAPABS
+
+dBL_PAR_POOLGAPABS_PTR :: CString
+dBL_PAR_POOLGAPABS_PTR = #const_cstr GRB_DBL_PAR_POOLGAPABS
+
+iNT_PAR_POOLSEARCHMODE :: String
+iNT_PAR_POOLSEARCHMODE = #const_str GRB_INT_PAR_POOLSEARCHMODE
+
+iNT_PAR_POOLSEARCHMODE_PTR :: CString
+iNT_PAR_POOLSEARCHMODE_PTR = #const_cstr GRB_INT_PAR_POOLSEARCHMODE
+
+iNT_PAR_IGNORENAMES :: String
+iNT_PAR_IGNORENAMES = #const_str GRB_INT_PAR_IGNORENAMES
+
+iNT_PAR_IGNORENAMES_PTR :: CString
+iNT_PAR_IGNORENAMES_PTR = #const_cstr GRB_INT_PAR_IGNORENAMES
+
+iNT_PAR_STARTNUMBER :: String
+iNT_PAR_STARTNUMBER = #const_str GRB_INT_PAR_STARTNUMBER
+
+iNT_PAR_STARTNUMBER_PTR :: CString
+iNT_PAR_STARTNUMBER_PTR = #const_cstr GRB_INT_PAR_STARTNUMBER
+
+iNT_PAR_PARTITIONPLACE :: String
+iNT_PAR_PARTITIONPLACE = #const_str GRB_INT_PAR_PARTITIONPLACE
+
+iNT_PAR_PARTITIONPLACE_PTR :: CString
+iNT_PAR_PARTITIONPLACE_PTR = #const_cstr GRB_INT_PAR_PARTITIONPLACE
+
+iNT_PAR_FUNCPIECES :: String
+iNT_PAR_FUNCPIECES = #const_str GRB_INT_PAR_FUNCPIECES
+
+iNT_PAR_FUNCPIECES_PTR :: CString
+iNT_PAR_FUNCPIECES_PTR = #const_cstr GRB_INT_PAR_FUNCPIECES
+
+dBL_PAR_FUNCPIECELENGTH :: String
+dBL_PAR_FUNCPIECELENGTH = #const_str GRB_DBL_PAR_FUNCPIECELENGTH
+
+dBL_PAR_FUNCPIECELENGTH_PTR :: CString
+dBL_PAR_FUNCPIECELENGTH_PTR = #const_cstr GRB_DBL_PAR_FUNCPIECELENGTH
+
+dBL_PAR_FUNCPIECEERROR :: String
+dBL_PAR_FUNCPIECEERROR = #const_str GRB_DBL_PAR_FUNCPIECEERROR
+
+dBL_PAR_FUNCPIECEERROR_PTR :: CString
+dBL_PAR_FUNCPIECEERROR_PTR = #const_cstr GRB_DBL_PAR_FUNCPIECEERROR
+
+dBL_PAR_FUNCPIECERATIO :: String
+dBL_PAR_FUNCPIECERATIO = #const_str GRB_DBL_PAR_FUNCPIECERATIO
+
+dBL_PAR_FUNCPIECERATIO_PTR :: CString
+dBL_PAR_FUNCPIECERATIO_PTR = #const_cstr GRB_DBL_PAR_FUNCPIECERATIO
+
+dBL_PAR_FUNCMAXVAL :: String
+dBL_PAR_FUNCMAXVAL = #const_str GRB_DBL_PAR_FUNCMAXVAL
+
+dBL_PAR_FUNCMAXVAL_PTR :: CString
+dBL_PAR_FUNCMAXVAL_PTR = #const_cstr GRB_DBL_PAR_FUNCMAXVAL
+
+iNT_PAR_FUNCNONLINEAR :: String
+iNT_PAR_FUNCNONLINEAR = #const_str GRB_INT_PAR_FUNCNONLINEAR
+
+iNT_PAR_FUNCNONLINEAR_PTR :: CString
+iNT_PAR_FUNCNONLINEAR_PTR = #const_cstr GRB_INT_PAR_FUNCNONLINEAR
+
+sTR_PAR_DUMMY :: String
+sTR_PAR_DUMMY = #const_str GRB_STR_PAR_DUMMY
+
+sTR_PAR_DUMMY_PTR :: CString
+sTR_PAR_DUMMY_PTR = #const_cstr GRB_STR_PAR_DUMMY
+
+sTR_PAR_JOBID :: String
+sTR_PAR_JOBID = #const_str GRB_STR_PAR_JOBID
+
+sTR_PAR_JOBID_PTR :: CString
+sTR_PAR_JOBID_PTR = #const_cstr GRB_STR_PAR_JOBID
+
 -- /* Parameter enumerations */
--- 
+
 -- /* Cuts parameter values */
--- 
--- #define GRB_CUTS_AUTO          -1
--- #define GRB_CUTS_OFF            0
--- #define GRB_CUTS_CONSERVATIVE   1
--- #define GRB_CUTS_AGGRESSIVE     2
--- #define GRB_CUTS_VERYAGGRESSIVE 3
--- 
+
+cUTS_AUTO :: CInt
+cUTS_AUTO = #const GRB_CUTS_AUTO
+
+cUTS_OFF :: CInt
+cUTS_OFF = #const GRB_CUTS_OFF
+
+cUTS_CONSERVATIVE :: CInt
+cUTS_CONSERVATIVE = #const GRB_CUTS_CONSERVATIVE
+
+cUTS_AGGRESSIVE :: CInt
+cUTS_AGGRESSIVE = #const GRB_CUTS_AGGRESSIVE
+
+cUTS_VERYAGGRESSIVE :: CInt
+cUTS_VERYAGGRESSIVE = #const GRB_CUTS_VERYAGGRESSIVE
+
 -- /* Presolve parameter values */
--- 
--- #define GRB_PRESOLVE_AUTO        -1
--- #define GRB_PRESOLVE_OFF          0
--- #define GRB_PRESOLVE_CONSERVATIVE 1
--- #define GRB_PRESOLVE_AGGRESSIVE   2
--- 
+
+pRESOLVE_AUTO :: CInt
+pRESOLVE_AUTO = #const GRB_PRESOLVE_AUTO
+
+pRESOLVE_OFF :: CInt
+pRESOLVE_OFF = #const GRB_PRESOLVE_OFF
+
+pRESOLVE_CONSERVATIVE :: CInt
+pRESOLVE_CONSERVATIVE = #const GRB_PRESOLVE_CONSERVATIVE
+
+pRESOLVE_AGGRESSIVE :: CInt
+pRESOLVE_AGGRESSIVE = #const GRB_PRESOLVE_AGGRESSIVE
+
 -- /* Method parameter values */
--- 
--- #define GRB_METHOD_NONE                            -1
--- #define GRB_METHOD_AUTO                            -1
--- #define GRB_METHOD_PRIMAL                           0
--- #define GRB_METHOD_DUAL                             1
--- #define GRB_METHOD_BARRIER                          2
--- #define GRB_METHOD_CONCURRENT                       3
--- #define GRB_METHOD_DETERMINISTIC_CONCURRENT         4
--- #define GRB_METHOD_DETERMINISTIC_CONCURRENT_SIMPLEX 5 /* Deprecated since v11 */
--- 
--- #define GRB_CONCURRENTMETHOD_AUTO                -1
--- #define GRB_CONCURRENTMETHOD_BARRIER_PRIMAL_DUAL  0
--- #define GRB_CONCURRENTMETHOD_BARRIER_DUAL         1
--- #define GRB_CONCURRENTMETHOD_BARRIER_PRIMAL       2
--- #define GRB_CONCURRENTMETHOD_PRIMAL_DUAL          3
--- 
+
+mETHOD_NONE :: CInt
+mETHOD_NONE = #const GRB_METHOD_NONE
+
+mETHOD_AUTO :: CInt
+mETHOD_AUTO = #const GRB_METHOD_AUTO
+
+mETHOD_PRIMAL :: CInt
+mETHOD_PRIMAL = #const GRB_METHOD_PRIMAL
+
+mETHOD_DUAL :: CInt
+mETHOD_DUAL = #const GRB_METHOD_DUAL
+
+mETHOD_BARRIER :: CInt
+mETHOD_BARRIER = #const GRB_METHOD_BARRIER
+
+mETHOD_CONCURRENT :: CInt
+mETHOD_CONCURRENT = #const GRB_METHOD_CONCURRENT
+
+mETHOD_DETERMINISTIC_CONCURRENT :: CInt
+mETHOD_DETERMINISTIC_CONCURRENT = #const GRB_METHOD_DETERMINISTIC_CONCURRENT
+
+-- |
+--
+-- Deprecated since v11
+mETHOD_DETERMINISTIC_CONCURRENT_SIMPLEX :: CInt
+mETHOD_DETERMINISTIC_CONCURRENT_SIMPLEX = #const GRB_METHOD_DETERMINISTIC_CONCURRENT_SIMPLEX
+
+cONCURRENTMETHOD_AUTO :: CInt
+cONCURRENTMETHOD_AUTO = #const GRB_CONCURRENTMETHOD_AUTO
+
+cONCURRENTMETHOD_BARRIER_PRIMAL_DUAL :: CInt
+cONCURRENTMETHOD_BARRIER_PRIMAL_DUAL = #const GRB_CONCURRENTMETHOD_BARRIER_PRIMAL_DUAL
+
+cONCURRENTMETHOD_BARRIER_DUAL :: CInt
+cONCURRENTMETHOD_BARRIER_DUAL = #const GRB_CONCURRENTMETHOD_BARRIER_DUAL
+
+cONCURRENTMETHOD_BARRIER_PRIMAL :: CInt
+cONCURRENTMETHOD_BARRIER_PRIMAL = #const GRB_CONCURRENTMETHOD_BARRIER_PRIMAL
+
+cONCURRENTMETHOD_PRIMAL_DUAL :: CInt
+cONCURRENTMETHOD_PRIMAL_DUAL = #const GRB_CONCURRENTMETHOD_PRIMAL_DUAL
+
 -- /* BarHomogeneous parameter values */
--- 
--- #define GRB_BARHOMOGENEOUS_AUTO -1
--- #define GRB_BARHOMOGENEOUS_OFF   0
--- #define GRB_BARHOMOGENEOUS_ON    1
--- 
+
+bARHOMOGENEOUS_AUTO :: CInt
+bARHOMOGENEOUS_AUTO = #const GRB_BARHOMOGENEOUS_AUTO
+
+bARHOMOGENEOUS_OFF :: CInt
+bARHOMOGENEOUS_OFF = #const GRB_BARHOMOGENEOUS_OFF
+
+bARHOMOGENEOUS_ON :: CInt
+bARHOMOGENEOUS_ON = #const GRB_BARHOMOGENEOUS_ON
+
 -- /* BarOrder parameter values */
--- 
--- #define GRB_BARORDER_AUTOMATIC       -1
--- #define GRB_BARORDER_AMD              0
--- #define GRB_BARORDER_NESTEDDISSECTION 1
--- 
+
+bARORDER_AUTOMATIC :: CInt
+bARORDER_AUTOMATIC = #const GRB_BARORDER_AUTOMATIC
+
+bARORDER_AMD :: CInt
+bARORDER_AMD = #const GRB_BARORDER_AMD
+
+bARORDER_NESTEDDISSECTION :: CInt
+bARORDER_NESTEDDISSECTION = #const GRB_BARORDER_NESTEDDISSECTION
+
 -- /* MIPFocus parameter values */
--- 
--- #define GRB_MIPFOCUS_BALANCED    0
--- #define GRB_MIPFOCUS_FEASIBILITY 1
--- #define GRB_MIPFOCUS_OPTIMALITY  2
--- #define GRB_MIPFOCUS_BESTBOUND   3
--- 
+
+mIPFOCUS_BALANCED :: CInt
+mIPFOCUS_BALANCED = #const GRB_MIPFOCUS_BALANCED
+
+mIPFOCUS_FEASIBILITY :: CInt
+mIPFOCUS_FEASIBILITY = #const GRB_MIPFOCUS_FEASIBILITY
+
+mIPFOCUS_OPTIMALITY :: CInt
+mIPFOCUS_OPTIMALITY = #const GRB_MIPFOCUS_OPTIMALITY
+
+mIPFOCUS_BESTBOUND :: CInt
+mIPFOCUS_BESTBOUND = #const GRB_MIPFOCUS_BESTBOUND
+
 -- /* SimplexPricing parameter values */
--- 
--- #define GRB_SIMPLEXPRICING_AUTO           -1
--- #define GRB_SIMPLEXPRICING_PARTIAL         0
--- #define GRB_SIMPLEXPRICING_STEEPEST_EDGE   1
--- #define GRB_SIMPLEXPRICING_DEVEX           2
--- #define GRB_SIMPLEXPRICING_STEEPEST_QUICK  3
--- 
+
+sIMPLEXPRICING_AUTO :: CInt
+sIMPLEXPRICING_AUTO = #const GRB_SIMPLEXPRICING_AUTO
+
+sIMPLEXPRICING_PARTIAL :: CInt
+sIMPLEXPRICING_PARTIAL = #const GRB_SIMPLEXPRICING_PARTIAL
+
+sIMPLEXPRICING_STEEPEST_EDGE :: CInt
+sIMPLEXPRICING_STEEPEST_EDGE = #const GRB_SIMPLEXPRICING_STEEPEST_EDGE
+
+sIMPLEXPRICING_DEVEX :: CInt
+sIMPLEXPRICING_DEVEX = #const GRB_SIMPLEXPRICING_DEVEX
+
+sIMPLEXPRICING_STEEPEST_QUICK :: CInt
+sIMPLEXPRICING_STEEPEST_QUICK = #const GRB_SIMPLEXPRICING_STEEPEST_QUICK
+
 -- /* VarBranch parameter values */
--- 
--- #define GRB_VARBRANCH_AUTO          -1
--- #define GRB_VARBRANCH_PSEUDO_REDUCED 0
--- #define GRB_VARBRANCH_PSEUDO_SHADOW  1
--- #define GRB_VARBRANCH_MAX_INFEAS     2
--- #define GRB_VARBRANCH_STRONG         3
--- 
+
+vARBRANCH_AUTO :: CInt
+vARBRANCH_AUTO = #const GRB_VARBRANCH_AUTO
+
+vARBRANCH_PSEUDO_REDUCED :: CInt
+vARBRANCH_PSEUDO_REDUCED = #const GRB_VARBRANCH_PSEUDO_REDUCED
+
+vARBRANCH_PSEUDO_SHADOW :: CInt
+vARBRANCH_PSEUDO_SHADOW = #const GRB_VARBRANCH_PSEUDO_SHADOW
+
+vARBRANCH_MAX_INFEAS :: CInt
+vARBRANCH_MAX_INFEAS = #const GRB_VARBRANCH_MAX_INFEAS
+
+vARBRANCH_STRONG :: CInt
+vARBRANCH_STRONG = #const GRB_VARBRANCH_STRONG
+
 -- /* PartitionPlace parameter values */
--- 
--- #define GRB_PARTITION_EARLY     16
--- #define GRB_PARTITION_ROOTSTART 8
--- #define GRB_PARTITION_ROOTEND   4
--- #define GRB_PARTITION_NODES     2
--- #define GRB_PARTITION_CLEANUP   1
--- 
+
+pARTITION_EARLY :: CInt
+pARTITION_EARLY = #const GRB_PARTITION_EARLY
+
+pARTITION_ROOTSTART :: CInt
+pARTITION_ROOTSTART = #const GRB_PARTITION_ROOTSTART
+
+pARTITION_ROOTEND :: CInt
+pARTITION_ROOTEND = #const GRB_PARTITION_ROOTEND
+
+pARTITION_NODES :: CInt
+pARTITION_NODES = #const GRB_PARTITION_NODES
+
+pARTITION_CLEANUP :: CInt
+pARTITION_CLEANUP = #const GRB_PARTITION_CLEANUP
+
 -- /* Callback phase values */
--- 
--- #define GRB_PHASE_MIP_NOREL   0
--- #define GRB_PHASE_MIP_SEARCH  1
--- #define GRB_PHASE_MIP_IMPROVE 2
--- 
+
+pHASE_MIP_NOREL :: CInt
+pHASE_MIP_NOREL = #const GRB_PHASE_MIP_NOREL
+
+pHASE_MIP_SEARCH :: CInt
+pHASE_MIP_SEARCH = #const GRB_PHASE_MIP_SEARCH
+
+pHASE_MIP_IMPROVE :: CInt
+pHASE_MIP_IMPROVE = #const GRB_PHASE_MIP_IMPROVE
+
 -- int __stdcall
 --   GRBcheckmodel(GRBmodel *model);
 foreign import stdcall safe "GRBcheckmodel" checkmodel
@@ -3212,14 +5586,24 @@ foreign import stdcall unsafe "GRBfree" free
   -> IO ()
 
 -- /* Batch object status codes */
--- 
--- #define GRB_BATCH_STATUS_UNKNOWN 0
--- #define GRB_BATCH_CREATED        1
--- #define GRB_BATCH_SUBMITTED      2
--- #define GRB_BATCH_ABORTED        3
--- #define GRB_BATCH_FAILED         4
--- #define GRB_BATCH_COMPLETED      5
 
+bATCH_STATUS_UNKNOWN :: CInt
+bATCH_STATUS_UNKNOWN = #const GRB_BATCH_STATUS_UNKNOWN
+
+bATCH_CREATED :: CInt
+bATCH_CREATED = #const GRB_BATCH_CREATED
+
+bATCH_SUBMITTED :: CInt
+bATCH_SUBMITTED = #const GRB_BATCH_SUBMITTED
+
+bATCH_ABORTED :: CInt
+bATCH_ABORTED = #const GRB_BATCH_ABORTED
+
+bATCH_FAILED :: CInt
+bATCH_FAILED = #const GRB_BATCH_FAILED
+
+bATCH_COMPLETED :: CInt
+bATCH_COMPLETED = #const GRB_BATCH_COMPLETED
 
 -- /* Async interface */
 
