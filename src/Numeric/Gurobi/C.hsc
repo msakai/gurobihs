@@ -3553,40 +3553,87 @@ foreign import stdcall safe "GRBcomputeIIS" computeIIS
   -> IO ErrorCode
 
 -- /* simplex advanced routines */
---
+
 -- typedef struct _GRBsvec
 -- {
 --   int     len; /* sparse vector length. -1: It is a dense vector. */
 --   int    *ind; /* indices array of the sparse vector */
 --   double *val; /* value array of the sparse vector */
 -- } GRBsvec;
---
+
+data SVec_
+type SVec = Ptr SVec_
+
 -- int __stdcall
 --   GRBFSolve(GRBmodel *model, GRBsvec *b, GRBsvec *x);
---
+foreign import stdcall safe "GRBFSolve" fsolve
+  :: Model -- ^ model
+  -> SVec -- ^ b
+  -> SVec -- ^ x
+  -> IO ErrorCode
+
 -- int __stdcall
 --   GRBBinvColj(GRBmodel *model, int j, GRBsvec *x);
---
+foreign import stdcall safe "GRBBinvColj" binvColj
+  :: Model -- ^ model
+  -> SVec -- ^ j
+  -> SVec -- ^ x
+  -> IO ErrorCode
+
 -- int __stdcall
 --   GRBBinvj(GRBmodel *model, int j, GRBsvec *x);
---
+foreign import stdcall safe "GRBBinvj" binvj
+  :: Model -- ^ model
+  -> SVec -- ^ j
+  -> SVec -- ^ x
+  -> IO ErrorCode
+
 -- int __stdcall
 --   GRBBSolve(GRBmodel *model, GRBsvec *b, GRBsvec *x);
---
+foreign import stdcall safe "GRBBSolve" bsolve
+  :: Model -- ^ model
+  -> SVec -- ^ b
+  -> SVec -- ^ x
+  -> IO ErrorCode
+
 -- int __stdcall
 --   GRBBinvi(GRBmodel *model, int i, GRBsvec *x);
---
+foreign import stdcall safe "GRBBinvi" binvi
+  :: Model -- ^ model
+  -> CInt -- ^ i
+  -> SVec -- ^ x
+  -> IO ErrorCode
+
 -- int __stdcall
 --   GRBBinvRowi(GRBmodel *model, int i, GRBsvec *x);
---
+foreign import stdcall safe "GRBBinvRowi" binvRowi
+  :: Model -- ^ model
+  -> CInt -- ^ i
+  -> SVec -- ^ x
+  -> IO ErrorCode
+
 -- int __stdcall
 --   GRBgetBasisHead(GRBmodel *model, int *bhead);
---
+foreign import stdcall safe "GRBgetBasisHead" getBasisHead
+  :: Model -- ^ model
+  -> CInt -- ^ bhead
+  -> IO ErrorCode
+
 -- int __stdcall
 --   GRBcbstoponemultiobj(GRBmodel *model, void *cbdata, int objnum);
---
+foreign import stdcall safe "GRBcbstoponemultiobj" cbstoponemultiobj
+  :: Model -- ^ model
+  -> CBData -- ^ cbdata
+  -> CInt -- ^ objnum
+  -> IO ErrorCode
+
 -- int __stdcall
 --   GRBsingularvectors(GRBmodel *model, double *left, double *right);
+foreign import stdcall safe "GRBsingularvectors" singularvectors
+  :: Model -- ^ model
+  -> Ptr Double -- ^ left
+  -> Ptr Double -- ^ right
+  -> IO ErrorCode
 
 -- /* Model status codes */
 
@@ -3656,14 +3703,23 @@ sUPERBASIC :: CInt
 sUPERBASIC = #const GRB_SUPERBASIC
 
 -- /* Undocumented routines */
---
+
 -- int __stdcall
 --   GRBstrongbranch(GRBmodel *model, int num, int *cand,
 --                   double *downobjbd, double *upobjbd, int *statusP);
+foreign import stdcall safe "GRBstrongbranch" strongbranch
+  :: Model -- ^ model
+  -> CInt -- ^ num
+  -> CInt -- ^ cand
+  -> Ptr CDouble -- ^ downobjbd
+  -> Ptr CDouble -- ^ upobjbd
+  -> Ptr CInt -- ^ statusP
+  -> IO ErrorCode
+
 -- /**************/
 -- /* Parameters */
 -- /**************/
---
+
 -- /* Termination */
 
 iNT_PAR_BARITERLIMIT :: String
