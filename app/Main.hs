@@ -4,11 +4,40 @@ import Numeric.Gurobi
 
 main :: IO ()
 main = do
-  env <- emptyEnv 
+  env <- emptyEnv
   setStrParam env "LogFile" "gurobi.log"
   startEnv env
 
+  -- Create a new model
   model <- newModel env "mip1"
-  
+
+  -- Create variables
+  x <- addVar model "x" BINARY
+  y <- addVar model "y" BINARY
+  z <- addVar model "z" BINARY
+
+  setObjective model ([(1,x), (1,y), (2,z)], 0) MAXIMIZE
+
+  -- Add constraint: x + 2 y + 3 z <= 4
+  c0 <- addConstr model ([(1,x), (2,y), (3,z)], 0) LESS_EQUAL 4 "c0"
+
+  -- Add constraint: x + y >= 1
+  c1 <- addConstr model ([(1,x), (1,y)], 0) GREATER_EQUAL 1 "c1"
+
+  -- Optimize model
+  optimize model
+
+  write model "mip1.lp"
+
+  status <- getIntAttr model "STATUS"
+  print status
+
+  objval <- getDblAttr model "OBJVAL"
+  print objval
+
+  vx <- getDblAttrElement model "X" 0
+  vy <- getDblAttrElement model "X" 1
+  vz <- getDblAttrElement model "X" 2
+  print (vx, vy, vz)
 
   return ()
