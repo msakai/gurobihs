@@ -175,11 +175,11 @@ sOS_TYPE2 = #const GRB_SOS_TYPE2
 
 -- /* Numeric constants */
 
-iNFINITY :: CInt
-iNFINITY = #const GRB_INFINITY
+iNFINITY :: CDouble
+iNFINITY = 1e100
 
-uNDEFINED :: CInt
-uNDEFINED = #const GRB_UNDEFINED
+uNDEFINED :: CDouble
+uNDEFINED = 1e101
 
 mAXINT :: CInt
 mAXINT = #const GRB_MAXINT
