@@ -35,6 +35,8 @@ ghc-options:
 
 library:
   source-dirs: src
+  dependencies:
+  - hashable
   extra-libraries: gurobi120
 
 executables:

@@ -1,17 +1,25 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Numeric.Gurobi where
 
 import Control.Exception
 import Control.Monad
 import Data.Function
+import Data.Hashable
 import Data.IORef
+import Data.Ord
 import Foreign
 import Foreign.C
+import GHC.Generics (Generic)
+
 import qualified Numeric.Gurobi.C as C
 
 data Error = Error C.ErrorCode String
-   deriving (Show)
+   deriving (Eq, Ord, Show, Read, Generic)
 
 instance Exception Error
+
+instance Hashable Error where
+  hashWithSalt salt (Error err msg) = hashWithSalt salt (fromIntegral err :: Int, msg)
 
 checkError :: C.Env -> IO C.ErrorCode -> IO ()
 checkError env action = do
@@ -26,7 +34,9 @@ data DataType
   = DTInt
   | DTDouble
   | DTString
-  deriving (Show, Eq, Ord, Enum, Bounded)
+  deriving (Eq, Ord, Enum, Bounded, Generic, Show, Read)
+
+instance Hashable DataType
 
 data AttrType
   = ModelAtrr
@@ -36,7 +46,9 @@ data AttrType
   | SOS2ConstrAttr
   | QConstrAttr
   | GenConstrAttr
-  deriving (Show, Eq, Ord, Enum, Bounded)
+  deriving (Eq, Ord, Enum, Bounded, Generic, Show, Read)
+
+instance Hashable AttrType
 
 getAttrInfo :: Model -> String -> IO (DataType, AttrType, Bool)
 getAttrInfo model name =
@@ -142,7 +154,7 @@ data ModelStatusCode
   | USER_OBJ_LIMIT
   | WORK_LIMIT
   | MEM_LIMIT
-  deriving (Show, Ord, Eq, Bounded)
+  deriving (Show, Read, Eq, Ord, Bounded, Generic)
 
 instance Enum ModelStatusCode where
   fromEnum LOADED          = 1
@@ -181,6 +193,8 @@ instance Enum ModelStatusCode where
   toEnum 16 = WORK_LIMIT
   toEnum 17 = MEM_LIMIT
   toEnum _  = error "Prelude.Enum.ModelStatusCode.toEnum: bad argument"
+
+instance Hashable ModelStatusCode
 
 getStatus :: Model -> IO ModelStatusCode
 getStatus model = toEnum <$> getIntAttrPtr model C.iNT_ATTR_STATUS_PTR
@@ -234,6 +248,15 @@ data Model
   , modelConstrCounter :: IORef Int
   }
 
+instance Eq Model where
+  (==) = (==) `on` modelPtr
+
+instance Ord Model where
+  compare = comparing modelPtr
+
+instance Hashable Model where
+  hashWithSalt salt model = hashWithSalt salt (modelPtr model)
+
 withModelPtr :: Model -> (C.Model -> IO a) -> IO a
 withModelPtr model block = block (modelPtr model)
 
@@ -257,7 +280,9 @@ newModel env name = do
       return (Model model varCounter constrCounter)
 
 data VariableType = CONTINUOUS | BINARY | INTEGER | SEMICONT | SEMIINT
-  deriving (Show, Read, Eq, Ord, Bounded)
+  deriving (Show, Read, Eq, Ord, Bounded, Generic)
+
+instance Hashable VariableType
 
 variableTypeToCChar :: VariableType -> CChar
 variableTypeToCChar CONTINUOUS = fromIntegral $ fromEnum 'C'
@@ -271,18 +296,20 @@ data Var
   { varModel :: !Model
   , varIndex :: !Int
   }
+  deriving (Eq, Ord)
 
-instance Eq Var where
-  (==) = (==) `on` varIndex
+instance Hashable Var where
+  hashWithSalt salt (Var model index) = hashWithSalt salt (model, index)
 
 data Constr
   = Constr
   { constrModel :: !Model
   , constrIndex :: Int
   }
+  deriving (Eq, Ord)
 
-instance Eq Constr where
-  (==) = (==) `on` constrIndex
+instance Hashable Constr where
+  hashWithSalt salt (Constr model index) = hashWithSalt salt (model, index)
 
 addVar :: Model -> String -> VariableType -> IO Var
 addVar model@Model{ modelVarCounter = varCounter } varname vtype =
@@ -304,7 +331,9 @@ addBinaryVar model varname = addVar model varname BINARY
 type LinExpr = ([(Double, Var)], Double)
 
 data ConstraintSense = LESS_EQUAL | GREATER_EQUAL | EQUAL
-  deriving (Show, Read, Eq, Ord, Bounded)
+  deriving (Eq, Ord, Enum, Bounded, Generic, Show, Read)
+
+instance Hashable ConstraintSense
 
 constraintSenseToCChar :: ConstraintSense -> CChar
 constraintSenseToCChar LESS_EQUAL    = fromIntegral $ fromEnum $ '<'
@@ -326,6 +355,9 @@ addConstr model@Model{ modelConstrCounter = constrCounter } (terms, constant) se
     pure $ Constr{ constrModel = model, constrIndex = n }
 
 data ObjectiveSense = MINIMIZE | MAXIMIZE
+  deriving (Eq, Ord, Enum, Bounded, Generic, Show, Read)
+
+instance Hashable ObjectiveSense
 
 objectiveSenseToInt :: ObjectiveSense -> Int
 objectiveSenseToInt MINIMIZE = fromIntegral C.mINIMIZE
