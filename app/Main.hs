@@ -1,5 +1,7 @@
 module Main (main) where
 
+import Control.Monad
+
 import Numeric.Gurobi
 
 main :: IO ()
@@ -35,9 +37,9 @@ main = do
   objval <- getObjVal model
   print objval
 
-  vx <- getX x
-  vy <- getX y
-  vz <- getX z
-  print (vx, vy, vz)
+  forM_ [x, y, z] $ \v -> do
+    name <- getVarName v
+    val <- getX v
+    putStrLn $ name ++ " = " ++ show val
 
   return ()

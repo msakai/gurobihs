@@ -112,6 +112,19 @@ setDblAttrArrayPtr Model{ modelPtr = model } attrnameP start len values = do
   env <- C.getenv model
   checkError env $ C.setdblattrarray model attrnameP (fromIntegral start) (fromIntegral len) values
 
+
+getStrAttrElement :: Model -> String -> Int -> IO String
+getStrAttrElement model attrname element = do
+  withCString attrname $ \attrnameP -> getStrAttrElementPtr model attrnameP element
+
+getStrAttrElementPtr :: Model -> CString -> Int -> IO String
+getStrAttrElementPtr Model{ modelPtr = model } attrnameP element = do
+  env <- C.getenv model
+  alloca $ \valueP -> do
+    checkError env $ C.getstrattrelement model attrnameP (fromIntegral element) valueP
+    p <- peek valueP
+    peekCString p
+
 data ModelStatusCode
   = LOADED
   | OPTIMAL
@@ -175,6 +188,9 @@ getStatus model = toEnum <$> getIntAttrPtr model C.iNT_ATTR_STATUS_PTR
 
 getObjVal :: Model -> IO Double
 getObjVal model = getDblAttrPtr model C.dBL_ATTR_OBJVAL_PTR
+
+getVarName :: Var -> IO String
+getVarName v = getStrAttrElementPtr (varModel v) C.sTR_ATTR_VARNAME_PTR (varIndex v)
 
 getX :: Var -> IO Double
 getX v = getDblAttrElementPtr (varModel v) C.dBL_ATTR_X_PTR (varIndex v)
