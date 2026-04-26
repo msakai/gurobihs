@@ -45,8 +45,7 @@ getAttrInfo model name =
   alloca $ \attrTypeP ->
   alloca $ \settableP ->
   withCString name $ \nameP -> do
-    env <- C.getenv modelP
-    checkError env $ C.getattrinfo modelP nameP typeP attrTypeP settableP
+    modelCheckError modelP $ C.getattrinfo modelP nameP typeP attrTypeP settableP
     dataType <- peek typeP
     attrType <- peek attrTypeP
     settable <- peek settableP
@@ -60,8 +59,7 @@ getIntAttrPtr :: Model -> CString -> IO Int
 getIntAttrPtr model attrnameP =
   withModelPtr model $ \modelP -> do
   alloca $ \valueP -> do
-    env <- C.getenv modelP
-    checkError env $ C.getintattr modelP attrnameP valueP
+    modelCheckError modelP $ C.getintattr modelP attrnameP valueP
     fromIntegral <$> peek valueP
 
 setIntAttr :: Model -> String -> Int -> IO ()
@@ -71,8 +69,7 @@ setIntAttr model attrname newvalue = do
 setIntAttrPtr :: Model -> CString -> Int -> IO ()
 setIntAttrPtr model attrnameP newvalue =
   withModelPtr model $ \modelP -> do
-     env <- C.getenv modelP
-     checkError env $ C.setintattr modelP attrnameP (fromIntegral newvalue)
+     modelCheckError modelP $ C.setintattr modelP attrnameP (fromIntegral newvalue)
 
 getDblAttr :: Model -> String -> IO Double
 getDblAttr model attrname = do
@@ -82,8 +79,7 @@ getDblAttrPtr :: Model -> CString -> IO Double
 getDblAttrPtr model attrnameP =
   withModelPtr model $ \modelP ->
   alloca $ \valueP -> do
-    env <- C.getenv modelP
-    checkError env $ C.getdblattr modelP attrnameP valueP
+    modelCheckError modelP $ C.getdblattr modelP attrnameP valueP
     realToFrac <$> peek valueP
 
 setDblAttr :: Model -> String -> Double -> IO ()
@@ -94,8 +90,7 @@ setDblAttr model attrname newvalue =
 setDblAttrPtr :: Model -> CString -> Double -> IO ()
 setDblAttrPtr model attrnameP newvalue  = do
   withModelPtr model $ \modelP -> do
-    env <- C.getenv modelP
-    checkError env $ C.setdblattr modelP attrnameP (realToFrac newvalue)
+    modelCheckError modelP $ C.setdblattr modelP attrnameP (realToFrac newvalue)
 
 getDblAttrElement :: Model -> String -> Int -> IO Double
 getDblAttrElement model attrname element = do
@@ -105,8 +100,7 @@ getDblAttrElementPtr :: Model -> CString -> Int -> IO Double
 getDblAttrElementPtr model attrnameP element =
   withModelPtr model $ \modelP ->
   alloca $ \valueP -> do
-    env <- C.getenv modelP
-    checkError env $ C.getdblattrelement modelP attrnameP (fromIntegral element) valueP
+    modelCheckError modelP $ C.getdblattrelement modelP attrnameP (fromIntegral element) valueP
     realToFrac <$> peek valueP
 
 setDblAttrArray :: Model -> String -> Int -> Int -> Ptr CDouble -> IO ()
@@ -116,8 +110,7 @@ setDblAttrArray model attrname start len values = do
 setDblAttrArrayPtr :: Model -> CString -> Int -> Int -> Ptr CDouble -> IO ()
 setDblAttrArrayPtr model attrnameP start len values =
   withModelPtr model $ \modelP -> do
-    env <- C.getenv modelP
-    checkError env $ C.setdblattrarray modelP attrnameP (fromIntegral start) (fromIntegral len) values
+    modelCheckError modelP $ C.setdblattrarray modelP attrnameP (fromIntegral start) (fromIntegral len) values
 
 getStrAttrElement :: Model -> String -> Int -> IO String
 getStrAttrElement model attrname element = do
@@ -127,8 +120,7 @@ getStrAttrElementPtr :: Model -> CString -> Int -> IO String
 getStrAttrElementPtr model attrnameP element =
   withModelPtr model $ \modelP ->
   alloca $ \valueP -> do
-    env <- C.getenv modelP
-    checkError env $ C.getstrattrelement modelP attrnameP (fromIntegral element) valueP
+    modelCheckError modelP $ C.getstrattrelement modelP attrnameP (fromIntegral element) valueP
     p <- peek valueP
     peekCString p
 
@@ -245,6 +237,11 @@ data Model
 withModelPtr :: Model -> (C.Model -> IO a) -> IO a
 withModelPtr model block = block (modelPtr model)
 
+modelCheckError :: C.Model -> IO C.ErrorCode -> IO ()
+modelCheckError modelP action = do
+  env <- C.getenv modelP
+  checkError env action
+
 newModel :: C.Env -> String -> IO Model
 newModel env name = do
   alloca $ \modelP -> do
@@ -296,8 +293,7 @@ addVar model@Model{ modelVarCounter = varCounter } varname vtype =
         obj = 0
         lb = - C.iNFINITY
         ub = C.iNFINITY
-    env <- C.getenv modelP
-    checkError env $ C.addvar modelP 0 vindP vvalP obj lb ub (variableTypeToCChar vtype) varnameP
+    modelCheckError modelP $ C.addvar modelP 0 vindP vvalP obj lb ub (variableTypeToCChar vtype) varnameP
     n <- readIORef varCounter
     writeIORef varCounter $! n + 1
     pure $ Var{ varModel = model, varIndex = n }
@@ -324,8 +320,7 @@ addConstr model@Model{ modelConstrCounter = constrCounter } (terms, constant) se
       forM_ (zip [0..] terms) $ \(i, (c, v)) -> do
         pokeElemOff cind i (fromIntegral (varIndex v))
         pokeElemOff cval i (realToFrac c :: CDouble)
-      env <- C.getenv modelP
-      checkError env $ C.addconstr modelP (fromIntegral numnz) cind cval (constraintSenseToCChar sense) (realToFrac (rhs - constant)) constrnameP
+      modelCheckError modelP $ C.addconstr modelP (fromIntegral numnz) cind cval (constraintSenseToCChar sense) (realToFrac (rhs - constant)) constrnameP
     n <- readIORef constrCounter
     writeIORef constrCounter $! n + 1
     pure $ Constr{ constrModel = model, constrIndex = n }
@@ -353,12 +348,10 @@ setObjective model@Model{ modelVarCounter = varCounter } (terms, constant) sense
 optimize :: Model -> IO ()
 optimize model =
   withModelPtr model $ \modelP -> do
-    env <- C.getenv modelP
-    checkError env $ C.optimize modelP
+    modelCheckError modelP $ C.optimize modelP
 
 write :: Model -> FilePath -> IO ()
 write model filename =
   withModelPtr model $ \modelP ->
   withCString filename $ \filenameP -> do
-    env <- C.getenv modelP
-    checkError env $ C.write modelP filenameP
+    modelCheckError modelP $ C.write modelP filenameP
