@@ -289,7 +289,7 @@ addVar model@Model{ modelPtr = modelP, modelVarCounter = varCounter } varname vt
     checkError env $ C.addvar modelP 0 vindP vvalP obj lb ub (variableTypeToCChar vtype) varnameP
   n <- readIORef varCounter
   writeIORef varCounter $! n + 1
-  pure $ Var{ varModel = model, varIndex = fromIntegral n }
+  pure $ Var{ varModel = model, varIndex = n }
 
 addBinaryVar :: Model -> String -> IO Var
 addBinaryVar model varname = addVar model varname BINARY
@@ -317,7 +317,7 @@ addConstr model@Model{ modelPtr = modelP, modelConstrCounter = constrCounter } (
         checkError env $ C.addconstr modelP (fromIntegral numnz) cind cval (constraintSenseToCChar sense) (realToFrac (rhs - constant)) constrnameP
   n <- readIORef constrCounter
   writeIORef constrCounter $! n + 1
-  pure $ Constr{ constrModel = model, constrIndex = fromIntegral n }
+  pure $ Constr{ constrModel = model, constrIndex = n }
 
 data ObjectiveSense = MINIMIZE | MAXIMIZE
 
@@ -336,7 +336,7 @@ setObjective model@Model{ modelVarCounter = varCounter } (terms, constant) sense
     forM_ [0..numVars-1] $ \i ->
       pokeElemOff cval i (0 :: CDouble)
     forM_ (terms) $ \(c, v) -> do
-      pokeElemOff cval (fromIntegral (varIndex v)) (realToFrac c :: CDouble)
+      pokeElemOff cval (varIndex v) (realToFrac c :: CDouble)
     setDblAttrArrayPtr model C.dBL_ATTR_OBJ_PTR 0 numVars cval
 
 optimize :: Model -> IO ()
