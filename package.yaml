@@ -38,8 +38,8 @@ library:
   extra-libraries: gurobi120
 
 executables:
-  gurobihs-exe:
-    main:                Main.hs
+  mip1:
+    main:                mip1.hs
     source-dirs:         app
     ghc-options:
     - -threaded
