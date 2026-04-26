@@ -111,6 +111,70 @@ setDblAttrArrayPtr Model{ modelPtr = model } attrnameP start len values = do
   env <- C.getenv model
   checkError env $ C.setdblattrarray model attrnameP (fromIntegral start) (fromIntegral len) values
 
+data ModelStatusCode
+  = LOADED
+  | OPTIMAL
+  | INFEASIBLE
+  | INF_OR_UNBD
+  | UNBOUNDED
+  | CUTOFF
+  | ITERATION_LIMIT
+  | NODE_LIMIT
+  | TIME_LIMIT
+  | SOLUTION_LIMIT
+  | INTERRUPTED
+  | NUMERIC
+  | SUBOPTIMAL
+  | INPROGRESS
+  | USER_OBJ_LIMIT
+  | WORK_LIMIT
+  | MEM_LIMIT
+  deriving (Show, Ord, Eq, Bounded)
+
+instance Enum ModelStatusCode where
+  fromEnum LOADED          = 1
+  fromEnum OPTIMAL         = 2
+  fromEnum INFEASIBLE      = 3
+  fromEnum INF_OR_UNBD     = 4
+  fromEnum UNBOUNDED       = 5
+  fromEnum CUTOFF          = 6
+  fromEnum ITERATION_LIMIT = 7
+  fromEnum NODE_LIMIT      = 8
+  fromEnum TIME_LIMIT      = 9
+  fromEnum SOLUTION_LIMIT  = 10
+  fromEnum INTERRUPTED     = 11
+  fromEnum NUMERIC         = 12
+  fromEnum SUBOPTIMAL      = 13
+  fromEnum INPROGRESS      = 14
+  fromEnum USER_OBJ_LIMIT  = 15
+  fromEnum WORK_LIMIT      = 16
+  fromEnum MEM_LIMIT       = 17
+
+  toEnum 1  = LOADED
+  toEnum 2  = OPTIMAL
+  toEnum 3  = INFEASIBLE
+  toEnum 4  = INF_OR_UNBD
+  toEnum 5  = UNBOUNDED
+  toEnum 6  = CUTOFF
+  toEnum 7  = ITERATION_LIMIT
+  toEnum 8  = NODE_LIMIT
+  toEnum 9  = TIME_LIMIT
+  toEnum 10 = SOLUTION_LIMIT
+  toEnum 11 = INTERRUPTED
+  toEnum 12 = NUMERIC
+  toEnum 13 = SUBOPTIMAL
+  toEnum 14 = INPROGRESS
+  toEnum 15 = USER_OBJ_LIMIT
+  toEnum 16 = WORK_LIMIT
+  toEnum 17 = MEM_LIMIT
+  toEnum _  = error "Prelude.Enum.ModelStatusCode.toEnum: bad argument"
+
+getStatus :: Model -> IO ModelStatusCode
+getStatus model = toEnum <$> getIntAttrPtr model C.iNT_ATTR_STATUS_PTR
+
+getObjVal :: Model -> IO Double
+getObjVal model = getDblAttrPtr model C.dBL_ATTR_OBJVAL_PTR
+
 emptyEnv :: IO C.Env
 emptyEnv =
   alloca $ \envP -> do

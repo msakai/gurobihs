@@ -29,10 +29,10 @@ main = do
 
   write model "mip1.lp"
 
-  status <- getIntAttr model "STATUS"
+  status <- getStatus model
   print status
 
-  objval <- getDblAttr model "OBJVAL"
+  objval <- getObjVal model
   print objval
 
   vx <- getDblAttrElement model "X" 0
