@@ -35,9 +35,9 @@ main = do
   objval <- getObjVal model
   print objval
 
-  vx <- getDblAttrElement model "X" 0
-  vy <- getDblAttrElement model "X" 1
-  vz <- getDblAttrElement model "X" 2
+  vx <- getX x
+  vy <- getX y
+  vz <- getX z
   print (vx, vy, vz)
 
   return ()

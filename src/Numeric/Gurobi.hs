@@ -2,6 +2,7 @@ module Numeric.Gurobi where
 
 import Control.Exception
 import Control.Monad
+import Data.Function
 import Data.IORef
 import Foreign
 import Foreign.C
@@ -175,6 +176,9 @@ getStatus model = toEnum <$> getIntAttrPtr model C.iNT_ATTR_STATUS_PTR
 getObjVal :: Model -> IO Double
 getObjVal model = getDblAttrPtr model C.dBL_ATTR_OBJVAL_PTR
 
+getX :: Var -> IO Double
+getX v = getDblAttrElementPtr (varModel v) C.dBL_ATTR_X_PTR (varIndex v)
+
 emptyEnv :: IO C.Env
 emptyEnv =
   alloca $ \envP -> do
@@ -239,25 +243,37 @@ variableTypeToCChar INTEGER    = fromIntegral $ fromEnum 'I'
 variableTypeToCChar SEMICONT   = fromIntegral $ fromEnum 'S'
 variableTypeToCChar SEMIINT    = fromIntegral $ fromEnum 'N'
 
-newtype Var = Var CInt
-  deriving Eq
+data Var
+  = Var
+  { varModel :: !Model
+  , varIndex :: !Int
+  }
 
-newtype Constr = Constr CInt
-  deriving Eq
+instance Eq Var where
+  (==) = (==) `on` varIndex
+
+data Constr
+  = Constr
+  { constrModel :: !Model
+  , constrIndex :: Int
+  }
+
+instance Eq Constr where
+  (==) = (==) `on` constrIndex
 
 addVar :: Model -> String -> VariableType -> IO Var
-addVar Model{ modelPtr = model, modelVarCounter = varCounter } varname vtype = do
-  env <- C.getenv model
+addVar model@Model{ modelPtr = modelP, modelVarCounter = varCounter } varname vtype = do
+  env <- C.getenv modelP
   withCString varname $ \varnameP -> do
     let vindP = nullPtr
         vvalP = nullPtr
         obj = 0
         lb = - C.iNFINITY
         ub = C.iNFINITY
-    checkError env $ C.addvar model 0 vindP vvalP obj lb ub (variableTypeToCChar vtype) varnameP
+    checkError env $ C.addvar modelP 0 vindP vvalP obj lb ub (variableTypeToCChar vtype) varnameP
   n <- readIORef varCounter
   writeIORef varCounter $! n + 1
-  pure $ Var (fromIntegral n)
+  pure $ Var{ varModel = model, varIndex = fromIntegral n }
 
 addBinaryVar :: Model -> String -> IO Var
 addBinaryVar model varname = addVar model varname BINARY
@@ -273,19 +289,19 @@ constraintSenseToCChar GREATER_EQUAL = fromIntegral $ fromEnum $ '>'
 constraintSenseToCChar EQUAL         = fromIntegral $ fromEnum $ '='
 
 addConstr :: Model -> LinExpr -> ConstraintSense -> Double -> String -> IO Constr
-addConstr Model{ modelPtr = model, modelConstrCounter = constrCounter } (terms, constant) sense rhs constrname = do
+addConstr model@Model{ modelPtr = modelP, modelConstrCounter = constrCounter } (terms, constant) sense rhs constrname = do
   let numnz = length terms
-  env <- C.getenv model
+  env <- C.getenv modelP
   withCString constrname $ \constrnameP -> do
     allocaArray numnz $ \cind -> do
       allocaArray numnz $ \cval -> do
-        forM_ (zip [0..] terms) $ \(i, (c, Var v)) -> do
-          pokeElemOff cind i v
+        forM_ (zip [0..] terms) $ \(i, (c, v)) -> do
+          pokeElemOff cind i (fromIntegral (varIndex v))
           pokeElemOff cval i (realToFrac c :: CDouble)
-        checkError env $ C.addconstr model (fromIntegral numnz) cind cval (constraintSenseToCChar sense) (realToFrac (rhs - constant)) constrnameP
+        checkError env $ C.addconstr modelP (fromIntegral numnz) cind cval (constraintSenseToCChar sense) (realToFrac (rhs - constant)) constrnameP
   n <- readIORef constrCounter
   writeIORef constrCounter $! n + 1
-  pure $ Constr (fromIntegral n)
+  pure $ Constr{ constrModel = model, constrIndex = fromIntegral n }
 
 data ObjectiveSense = MINIMIZE | MAXIMIZE
 
@@ -303,8 +319,8 @@ setObjective model@Model{ modelVarCounter = varCounter } (terms, constant) sense
   allocaArray numVars $ \cval-> do
     forM_ [0..numVars-1] $ \i ->
       pokeElemOff cval i (0 :: CDouble)
-    forM_ (terms) $ \(c, Var v) -> do
-      pokeElemOff cval (fromIntegral v) (realToFrac c :: CDouble)
+    forM_ (terms) $ \(c, v) -> do
+      pokeElemOff cval (fromIntegral (varIndex v)) (realToFrac c :: CDouble)
     setDblAttrArrayPtr model C.dBL_ATTR_OBJ_PTR 0 numVars cval
 
 optimize :: Model -> IO ()
