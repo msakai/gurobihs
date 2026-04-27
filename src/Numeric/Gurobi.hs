@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 module Numeric.Gurobi where
 
 import Control.Exception
@@ -7,6 +8,8 @@ import Data.Function
 import Data.Hashable
 import Data.IORef
 import Data.Ord
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap.Strict as IntMap
 import Foreign
 import Foreign.C
 import GHC.Generics (Generic)
@@ -328,7 +331,24 @@ addVar model@Model{ modelVarCounter = varCounter } varname vtype =
 addBinaryVar :: Model -> String -> IO Var
 addBinaryVar model varname = addVar model varname BINARY
 
-type LinExpr = ([(Double, Var)], Double)
+data LinExpr = LinExpr !(Maybe Model) (IntMap Double) Double
+
+constExpr :: Double -> LinExpr
+constExpr x = LinExpr Nothing IntMap.empty x
+
+exprFromTerms :: [(Double, Var)] -> LinExpr
+exprFromTerms [] = constExpr 0
+exprFromTerms tts@((_,v0) : ts)
+  | or [varModel v0 /= varModel v | (_,v) <- ts] = error "model mismatch"
+  | otherwise = LinExpr (if IntMap.null m1 then Nothing else Just (varModel v0)) m1 0
+  where
+    m1 = foldl' ins IntMap.empty tts
+    ins m (c, v) = IntMap.alter (\case
+                     Nothing -> Just c
+                     Just c'
+                       | c + c' == 0 -> Nothing
+                       | otherwise -> Just (c + c')
+                     ) (varIndex v) m
 
 data ConstraintSense = LESS_EQUAL | GREATER_EQUAL | EQUAL
   deriving (Eq, Ord, Enum, Bounded, Generic, Show, Read)
@@ -341,13 +361,15 @@ constraintSenseToCChar GREATER_EQUAL = fromIntegral $ fromEnum $ '>'
 constraintSenseToCChar EQUAL         = fromIntegral $ fromEnum $ '='
 
 addConstr :: Model -> LinExpr -> ConstraintSense -> Double -> String -> IO Constr
-addConstr model@Model{ modelConstrCounter = constrCounter } (terms, constant) sense rhs constrname =
+addConstr model (LinExpr (Just model') _terms _constant) _sense _rhs _constrname
+  | model /= model' = error "model mismatch"
+addConstr model@Model{ modelConstrCounter = constrCounter } (LinExpr _ terms constant) sense rhs constrname =
   withModelPtr model $ \modelP ->
   withCString constrname $ \constrnameP -> do
-    let numnz = length terms
+    let numnz = IntMap.size terms
     allocaArray numnz $ \cind -> allocaArray numnz $ \cval -> do
-      forM_ (zip [0..] terms) $ \(i, (c, v)) -> do
-        pokeElemOff cind i (fromIntegral (varIndex v))
+      forM_ (zip [0..] (IntMap.toList terms)) $ \(i, (v, c)) -> do
+        pokeElemOff cind i (fromIntegral v)
         pokeElemOff cval i (realToFrac c :: CDouble)
       modelCheckError modelP $ C.addconstr modelP (fromIntegral numnz) cind cval (constraintSenseToCChar sense) (realToFrac (rhs - constant)) constrnameP
     n <- readIORef constrCounter
@@ -365,7 +387,9 @@ objectiveSenseToInt MAXIMIZE = fromIntegral C.mAXIMIZE
 
 -- TODO: use GRBsetobjective
 setObjective :: Model -> LinExpr -> ObjectiveSense -> IO ()
-setObjective model@Model{ modelVarCounter = varCounter } (terms, constant) sense = do
+setObjective model (LinExpr (Just model') _terms _constant) _sense
+  | model /= model' = error "model mismatch"
+setObjective model@Model{ modelVarCounter = varCounter } (LinExpr _ terms constant) sense = do
   -- numVars <- getIntAttrPtr model iNT_ATTR_NUMVARS
   numVars <- readIORef varCounter
   setIntAttrPtr model C.iNT_ATTR_MODELSENSE_PTR (objectiveSenseToInt sense)
@@ -373,8 +397,8 @@ setObjective model@Model{ modelVarCounter = varCounter } (terms, constant) sense
   allocaArray numVars $ \cval-> do
     forM_ [0..numVars-1] $ \i ->
       pokeElemOff cval i (0 :: CDouble)
-    forM_ (terms) $ \(c, v) -> do
-      pokeElemOff cval (varIndex v) (realToFrac c :: CDouble)
+    forM_ (IntMap.toList terms) $ \(v, c) -> do
+      pokeElemOff cval v (realToFrac c :: CDouble)
     setDblAttrArrayPtr model C.dBL_ATTR_OBJ_PTR 0 numVars cval
 
 optimize :: Model -> IO ()

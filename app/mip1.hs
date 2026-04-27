@@ -26,13 +26,13 @@ main = do
   y <- addVar model "y" BINARY
   z <- addVar model "z" BINARY
 
-  setObjective model ([(1,x), (1,y), (2,z)], 0) MAXIMIZE
+  setObjective model (exprFromTerms [(1,x), (1,y), (2,z)]) MAXIMIZE
 
   -- Add constraint: x + 2 y + 3 z <= 4
-  c0 <- addConstr model ([(1,x), (2,y), (3,z)], 0) LESS_EQUAL 4 "c0"
+  c0 <- addConstr model (exprFromTerms [(1,x), (2,y), (3,z)]) LESS_EQUAL 4 "c0"
 
   -- Add constraint: x + y >= 1
-  c1 <- addConstr model ([(1,x), (1,y)], 0) GREATER_EQUAL 1 "c1"
+  c1 <- addConstr model (exprFromTerms [(1,x), (1,y)]) GREATER_EQUAL 1 "c1"
 
   -- Optimize model
   optimize model
