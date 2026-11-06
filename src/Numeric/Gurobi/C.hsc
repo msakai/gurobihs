@@ -2840,8 +2840,11 @@ type ThreadCreateCB usrdata = Ptr Thread -> FunPtr (Ptr () -> IO ()) -> Ptr () -
 type ThreadJoinCB usrdata = Ptr Thread -> Ptr usrdata -> IO ()
 
 apitype :: CInt
+##ifdef GUROBIHS_API_TYPE
+apitype = GUROBIHS_API_TYPE
+##else
 apitype = -1
--- apitype = 0
+##endif
 
 -- #define GRBemptyenvadv(envP, malloccb, callocbc, realloccb, freecb, threadcreatecb, threadjoincb, syscbusrdata) GRBemptyenvadvinternal(envP, -1, GRB_VERSION_MAJOR, GRB_VERSION_MINOR, GRB_VERSION_TECHNICAL, malloccb, callocbc, realloccb, freecb, threadcreatecb, threadjoincb, syscbusrdata)
 emptyenvadv envP malloccb callocbc realloccb freecb threadcreatecb threadjoincb syscbusrdata = emptyenvadvinternal envP apitype
